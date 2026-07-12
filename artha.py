@@ -1,13 +1,12 @@
 # ============================================================
-# ⚡ ARTHA v3.2 - GitHub Actions Edition
-# Automated Daily NSE/BSE + Global + Crypto Scanner
+# ⚡ ARTHA v3.3 - GitHub Actions Edition (Fixed)
 # ============================================================
 
 import yfinance as yf
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
-np.NaN = np.nan
+np.NaN = np.nan  # Compatibility fix for pandas_ta
+import pandas_ta as ta
 import requests
 import warnings
 import os
@@ -22,7 +21,8 @@ CHAT_ID   = os.environ.get("CHAT_ID", "")
 
 BOT_NAME    = "⚡ ARTHA"
 BOT_TAGLINE = "Smart Money. Delivered Daily."
-BOT_VERSION = "v3.2"
+BOT_VERSION = "v3.3"
+
 
 # ============================================================
 # 📥 GET NSE STOCK LIST
