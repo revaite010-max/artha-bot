@@ -19,14 +19,21 @@ jobs:
         with:
           python-version: '3.10'
       
-      - name: Install dependencies
+      - name: Create and Setup Virtual Environment
         run: |
+          python -m venv venv
+          source venv/bin/activate
           python -m pip install --upgrade pip
-          pip install numpy==1.26.4 pandas==2.2.3 yfinance==0.2.40 requests==2.31.0 nsepython==2.95 setuptools
-          pip install pandas-ta==0.3.14b0
+          pip install numpy==1.26.4 pandas==2.2.3 yfinance==0.2.40 requests==2.31.0 nsepython==2.95
+          # Installing pandas_ta without checking dependencies to avoid conflicts
+          pip install pandas-ta==0.3.14b0 --no-deps
+          # Installing missing dependencies manually
+          pip install scipy matplotlib
       
       - name: Run ARTHA
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python artha.py
+        run: |
+          source venv/bin/activate
+          python artha.py
