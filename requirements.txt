@@ -1,7 +1,2 @@
-numpy==1.26.4
-pandas==2.2.3
-yfinance==0.2.40
-pandas-ta==0.3.14b0
-requests==2.31.0
-nsepython==2.95
-setuptools
+# We are installing dependencies in the workflow file directly
+# to ensure correct version ordering.
