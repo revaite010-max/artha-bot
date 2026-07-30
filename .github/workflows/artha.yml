@@ -2,7 +2,7 @@ name: ARTHA Daily Screener
 
 on:
   schedule:
-    - cron: '30 1 * * 1-5'
+    - cron: '0 1 * * 1-5'
   workflow_dispatch:
 
 jobs:
