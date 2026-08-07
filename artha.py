@@ -5,7 +5,6 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import time
-import json
 from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
@@ -15,53 +14,11 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHAT_ID   = os.environ.get("CHAT_ID", "")
 
 BOT_NAME    = "⚡ ARTHA"
-BOT_VERSION = "v7.0"
-BOT_TAGLINE = "Multi-Asset Intelligence Pro"
+BOT_VERSION = "v8.0"
+BOT_TAGLINE = "Smart Entry Edition"
 
 # ============================================================
-# 🌍 ASSET UNIVERSE
-# ============================================================
-COMMODITIES = {
-    "Gold (COMEX)"      : "GC=F",
-    "Silver (COMEX)"    : "SI=F",
-    "Crude Oil WTI"     : "CL=F",
-    "Brent Crude"       : "BZ=F",
-    "Natural Gas"       : "NG=F",
-    "Copper"            : "HG=F",
-    "Platinum"          : "PL=F",
-    "Palladium"         : "PA=F"
-}
-
-INDIAN_ETFS = {
-    "Gold BEES"         : "GOLDBEES.NS",
-    "Silver BEES"       : "SILVERBEES.NS",
-    "Gold Shares"       : "GOLDSHARE.NS",
-    "Nippon Silver ETF" : "SILVER.NS",
-    "HDFC Gold ETF"     : "HDFCGOLD.NS",
-    "SBI Gold ETF"      : "SETFGOLD.NS"
-}
-
-CRYPTO = {
-    "Bitcoin"      : "BTC-USD",
-    "Ethereum"     : "ETH-USD",
-    "BNB"          : "BNB-USD",
-    "Solana"       : "SOL-USD",
-    "XRP"          : "XRP-USD",
-    "Cardano"      : "ADA-USD",
-    "Avalanche"    : "AVAX-USD",
-    "Polkadot"     : "DOT-USD",
-    "Chainlink"    : "LINK-USD",
-    "Polygon"      : "MATIC-USD"
-}
-
-US_TOP_STOCKS = [
-    "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "AMD",
-    "NFLX", "ORCL", "CRM", "ADBE", "INTC", "QCOM", "AVGO", "TSM",
-    "JPM", "V", "MA", "PYPL"
-]
-
-# ============================================================
-# 🧮 MATH LIBRARY (Same as v6.0)
+# 🧮 MATH LIBRARY
 # ============================================================
 def get_ema(s, n): return s.ewm(span=n, adjust=False).mean()
 def get_sma(s, n): return s.rolling(n).mean()
@@ -80,11 +37,6 @@ def get_macd(s):
     signal = macd.ewm(span=9, adjust=False).mean()
     return macd, signal, macd - signal
 
-def get_bb(s, n=20, std=2):
-    sma = s.rolling(n).mean()
-    stdev = s.rolling(n).std()
-    return sma + (std * stdev), sma, sma - (std * stdev)
-
 def get_atr(high, low, close, n=14):
     tr1 = high - low
     tr2 = abs(high - close.shift())
@@ -92,44 +44,399 @@ def get_atr(high, low, close, n=14):
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
     return tr.rolling(n).mean()
 
-def get_adx(high, low, close, n=14):
-    plus_dm = high.diff()
-    minus_dm = -low.diff()
-    plus_dm[plus_dm < 0] = 0
-    minus_dm[minus_dm < 0] = 0
-    tr = pd.concat([high-low, abs(high-close.shift()), abs(low-close.shift())], axis=1).max(axis=1)
-    atr = tr.rolling(n).mean()
-    plus_di = 100 * (plus_dm.rolling(n).mean() / atr)
-    minus_di = 100 * (minus_dm.rolling(n).mean() / atr)
-    dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di)
-    return dx.rolling(n).mean(), plus_di, minus_di
+def get_bb(s, n=20, std=2):
+    sma = s.rolling(n).mean()
+    stdev = s.rolling(n).std()
+    return sma + (std * stdev), sma, sma - (std * stdev)
 
-def get_obv(close, volume):
-    return (np.sign(close.diff()) * volume).fillna(0).cumsum()
-
-def get_roc(close, n=12):
-    return ((close - close.shift(n)) / close.shift(n)) * 100
-
-def calculate_rs_rating(stock_close, benchmark_close):
+# ============================================================
+# 🎯 MARKET REGIME DETECTOR (NEW!)
+# ============================================================
+def detect_market_regime():
+    """Detect if market is BULL, BEAR, or SIDEWAYS"""
     try:
-        periods = [63, 126, 189, 252]
-        stock_perf, bench_perf = [], []
-        for p in periods:
-            if len(stock_close) > p and len(benchmark_close) > p:
-                stock_perf.append(stock_close.iloc[-1] / stock_close.iloc[-p])
-                bench_perf.append(benchmark_close.iloc[-1] / benchmark_close.iloc[-p])
-        if not stock_perf: return 50
-        weights = [0.40, 0.20, 0.20, 0.20][:len(stock_perf)]
-        stock_score = sum(s*w for s,w in zip(stock_perf, weights))
-        bench_score = sum(n*w for n,w in zip(bench_perf, weights))
-        rs = (stock_score / bench_score) * 100
-        return min(max(rs, 0), 100)
-    except: return 50
+        nifty = yf.download("^NSEI", period="6mo", progress=False)
+        close = nifty['Close'].squeeze()
+        
+        ema20 = get_ema(close, 20)
+        ema50 = get_ema(close, 50)
+        ema200 = get_ema(close, 200)
+        
+        curr = close.iloc[-1]
+        curr_ema20 = ema20.iloc[-1]
+        curr_ema50 = ema50.iloc[-1]
+        curr_ema200 = ema200.iloc[-1]
+        
+        # Check trend structure
+        strong_bull = curr > curr_ema20 > curr_ema50 > curr_ema200
+        moderate_bull = curr > curr_ema20 > curr_ema50
+        sideways = curr > curr_ema200 and abs(curr - curr_ema20) / curr < 0.02
+        bear = curr < curr_ema50 < curr_ema200
+        
+        # Recent momentum
+        change_20d = ((curr - close.iloc[-20]) / close.iloc[-20]) * 100
+        
+        if strong_bull and change_20d > 3:
+            regime = "STRONG_BULL"
+            trade_allowed = True
+            confidence = 100
+        elif moderate_bull and change_20d > 0:
+            regime = "BULL"
+            trade_allowed = True
+            confidence = 75
+        elif sideways:
+            regime = "SIDEWAYS"
+            trade_allowed = False
+            confidence = 40
+        elif bear:
+            regime = "BEAR"
+            trade_allowed = False
+            confidence = 20
+        else:
+            regime = "UNCERTAIN"
+            trade_allowed = False
+            confidence = 30
+        
+        return {
+            "regime": regime,
+            "trade_allowed": trade_allowed,
+            "confidence": confidence,
+            "nifty_change_20d": round(change_20d, 2),
+            "nifty_price": round(curr, 2)
+        }
+    except Exception as e:
+        return {"regime": "UNKNOWN", "trade_allowed": False, "confidence": 0, "nifty_change_20d": 0, "nifty_price": 0}
 
 # ============================================================
-# 📥 GET NSE STOCKS
+# 🎯 EARLY BREAKOUT DETECTOR (NEW!)
 # ============================================================
-def get_nse_tickers():
+def detect_early_breakout(df):
+    """Detect breakouts in EARLY stage (Day 1-3), not late"""
+    try:
+        close = df['Close'].squeeze()
+        high = df['High'].squeeze()
+        low = df['Low'].squeeze()
+        volume = df['Volume'].squeeze()
+        
+        # Check last 5 days
+        last_5_high = high.iloc[-5:].max()
+        prev_20_high = high.iloc[-25:-5].max()
+        
+        # Was consolidating before?
+        consolidation_range = (high.iloc[-25:-5].max() - low.iloc[-25:-5].min()) / low.iloc[-25:-5].min() * 100
+        was_consolidating = consolidation_range < 10  # Less than 10% range
+        
+        # Just broke out?
+        just_broke_out = last_5_high > prev_20_high
+        
+        # Days since breakout
+        days_since_breakout = 0
+        for i in range(1, 6):
+            if high.iloc[-i] > prev_20_high:
+                days_since_breakout = i
+                break
+        
+        # Volume expanding on breakout
+        avg_vol_prev = volume.iloc[-25:-5].mean()
+        recent_vol = volume.iloc[-5:].mean()
+        volume_expanding = recent_vol > avg_vol_prev * 1.5
+        
+        # Perfect early setup
+        is_early = was_consolidating and just_broke_out and days_since_breakout <= 3 and volume_expanding
+        
+        return {
+            "is_early_breakout": is_early,
+            "days_since_breakout": days_since_breakout,
+            "was_consolidating": was_consolidating,
+            "volume_expanding": volume_expanding,
+            "prev_range_pct": round(consolidation_range, 2)
+        }
+    except:
+        return None
+
+# ============================================================
+# 🎯 PULLBACK OPPORTUNITY DETECTOR (NEW!)
+# ============================================================
+def detect_pullback_entry(df):
+    """Detect pullback to support (safer entry)"""
+    try:
+        close = df['Close'].squeeze()
+        high = df['High'].squeeze()
+        low = df['Low'].squeeze()
+        
+        ema20 = get_ema(close, 20).iloc[-1]
+        ema50 = get_ema(close, 50).iloc[-1]
+        curr = close.iloc[-1]
+        
+        # Recent high (5-15 days ago)
+        recent_high = high.iloc[-15:-3].max()
+        
+        # Currently pulling back to EMA20?
+        dist_from_high = ((recent_high - curr) / recent_high) * 100
+        near_ema20 = abs(curr - ema20) / curr < 0.02  # Within 2% of EMA20
+        
+        # Bouncing from support?
+        bouncing = curr > low.iloc[-3:].min() and low.iloc[-1] > low.iloc[-2]
+        
+        # Volume declining on pullback (healthy)
+        pullback_vol = df['Volume'].iloc[-3:].mean()
+        prev_vol = df['Volume'].iloc[-15:-3].mean()
+        healthy_pullback = pullback_vol < prev_vol
+        
+        is_pullback_entry = (
+            dist_from_high < 8 and  # Pulled back but not too much
+            dist_from_high > 2 and  # At least 2% pullback
+            near_ema20 and          # Near support
+            bouncing and             # Starting to bounce
+            healthy_pullback         # Low volume on decline
+        )
+        
+        return {
+            "is_pullback_entry": is_pullback_entry,
+            "dist_from_high": round(dist_from_high, 2),
+            "near_support": near_ema20,
+            "healthy_pullback": healthy_pullback
+        }
+    except:
+        return None
+
+# ============================================================
+# 🎯 MULTI-TIMEFRAME CONFIRMATION (NEW!)
+# ============================================================
+def multi_timeframe_confirmation(ticker):
+    """Check if multiple timeframes agree"""
+    try:
+        # Weekly
+        weekly = yf.download(ticker, period="2y", interval="1wk", progress=False, timeout=10)
+        if len(weekly) < 30: return None
+        
+        w_close = weekly['Close'].squeeze()
+        w_ema20 = get_ema(w_close, 20)
+        weekly_bullish = w_close.iloc[-1] > w_ema20.iloc[-1]
+        
+        # Daily (already have this)
+        daily = yf.download(ticker, period="6mo", interval="1d", progress=False, timeout=10)
+        d_close = daily['Close'].squeeze()
+        d_ema20 = get_ema(d_close, 20)
+        d_ema50 = get_ema(d_close, 50)
+        daily_bullish = d_close.iloc[-1] > d_ema20.iloc[-1] > d_ema50.iloc[-1]
+        
+        # Hourly (last 5 days)
+        hourly = yf.download(ticker, period="5d", interval="1h", progress=False, timeout=10)
+        if len(hourly) < 20: 
+            hourly_bullish = daily_bullish  # Fallback
+        else:
+            h_close = hourly['Close'].squeeze()
+            h_ema20 = get_ema(h_close, 20)
+            hourly_bullish = h_close.iloc[-1] > h_ema20.iloc[-1]
+        
+        alignment_score = sum([weekly_bullish, daily_bullish, hourly_bullish])
+        
+        return {
+            "weekly_bullish": weekly_bullish,
+            "daily_bullish": daily_bullish,
+            "hourly_bullish": hourly_bullish,
+            "alignment": f"{alignment_score}/3",
+            "all_aligned": alignment_score == 3
+        }
+    except:
+        return None
+
+# ============================================================
+# 🎯 VOLUME QUALITY ANALYZER (NEW!)
+# ============================================================
+def analyze_volume_quality(df):
+    """Distinguish accumulation from distribution"""
+    try:
+        close = df['Close'].squeeze()
+        volume = df['Volume'].squeeze()
+        
+        # Last 10 days analysis
+        recent_close = close.iloc[-10:]
+        recent_vol = volume.iloc[-10:]
+        avg_vol = volume.rolling(50).mean().iloc[-1]
+        
+        # Count up-days and down-days with high volume
+        up_days_high_vol = 0
+        down_days_high_vol = 0
+        
+        for i in range(-10, 0):
+            if volume.iloc[i] > avg_vol * 1.3:
+                if close.iloc[i] > close.iloc[i-1]:
+                    up_days_high_vol += 1
+                else:
+                    down_days_high_vol += 1
+        
+        # Accumulation = high volume on up days
+        # Distribution = high volume on down days
+        if up_days_high_vol >= 3 and down_days_high_vol <= 1:
+            quality = "ACCUMULATION"
+            score = 10
+        elif up_days_high_vol > down_days_high_vol:
+            quality = "MILD_ACCUMULATION"
+            score = 7
+        elif up_days_high_vol == down_days_high_vol:
+            quality = "NEUTRAL"
+            score = 5
+        else:
+            quality = "DISTRIBUTION"
+            score = 0
+        
+        return {
+            "quality": quality,
+            "score": score,
+            "up_days_high_vol": up_days_high_vol,
+            "down_days_high_vol": down_days_high_vol
+        }
+    except:
+        return {"quality": "UNKNOWN", "score": 5}
+
+# ============================================================
+# 🎯 SMART SCANNER (v8.0)
+# ============================================================
+def smart_scan_stock(ticker, nifty_close=None):
+    try:
+        df = yf.download(ticker, period="6mo", interval="1d", progress=False, timeout=10)
+        if df is None or len(df) < 100: return None
+        
+        close = df['Close'].squeeze()
+        high = df['High'].squeeze()
+        low = df['Low'].squeeze()
+        vol = df['Volume'].squeeze()
+        
+        if close.iloc[-1] < 30 or vol.mean() < 50000: return None
+        
+        # Basic technicals
+        ema20 = get_ema(close, 20)
+        ema50 = get_ema(close, 50)
+        ema200 = get_ema(close, 200)
+        rsi = get_rsi(close, 14)
+        macd, msig, _ = get_macd(close)
+        atr = get_atr(high, low, close, 14)
+        
+        c = len(df) - 1
+        curr = close.iloc[c]
+        
+        # HARD FILTERS (Stricter than before)
+        if not (curr > ema20.iloc[c] > ema50.iloc[c] > ema200.iloc[c]): return None
+        if not (55 <= rsi.iloc[c] <= 70): return None  # Tighter RSI range
+        if not (macd.iloc[c] > msig.iloc[c] and macd.iloc[c] > 0): return None
+        
+        # NEW: Early breakout OR pullback entry
+        early = detect_early_breakout(df)
+        pullback = detect_pullback_entry(df)
+        
+        # Must be EARLY breakout (Day 1-3) OR healthy PULLBACK
+        if not (early and early['is_early_breakout']) and not (pullback and pullback['is_pullback_entry']):
+            return None  # Skip late breakouts!
+        
+        # NEW: Volume quality check
+        vol_analysis = analyze_volume_quality(df)
+        if vol_analysis['quality'] == 'DISTRIBUTION':
+            return None  # Skip if distribution
+        
+        # NEW: Multi-timeframe check
+        mtf = multi_timeframe_confirmation(ticker)
+        if mtf and not mtf['all_aligned']:
+            return None  # Skip if timeframes don't agree
+        
+        # SMART SCORING (Only high-probability setups)
+        score = 0
+        signals = []
+        
+        # Entry type bonus
+        if early and early['is_early_breakout']:
+            score += 25
+            signals.append(f"Early Breakout (Day {early['days_since_breakout']})")
+        
+        if pullback and pullback['is_pullback_entry']:
+            score += 25
+            signals.append("Healthy Pullback Entry")
+        
+        # Volume quality
+        score += vol_analysis['score']
+        if vol_analysis['quality'] == 'ACCUMULATION':
+            signals.append("Institutional Accumulation")
+        
+        # RSI in sweet spot
+        if 58 <= rsi.iloc[c] <= 65:
+            score += 15
+            signals.append("Optimal RSI Zone")
+        elif 55 <= rsi.iloc[c] <= 70:
+            score += 8
+        
+        # Multi-timeframe alignment
+        if mtf and mtf['all_aligned']:
+            score += 20
+            signals.append("MTF Aligned")
+        
+        # Distance from EMA (not too extended)
+        dist_from_ema20 = ((curr - ema20.iloc[c]) / ema20.iloc[c]) * 100
+        if dist_from_ema20 < 5:
+            score += 15
+            signals.append("Not Extended")
+        elif dist_from_ema20 < 8:
+            score += 8
+        else:
+            return None  # Too extended = risky
+        
+        # RS Rating vs Nifty
+        if nifty_close is not None and len(nifty_close) > 63:
+            stock_perf = close.iloc[-1] / close.iloc[-63]
+            nifty_perf = nifty_close.iloc[-1] / nifty_close.iloc[-63]
+            rs = (stock_perf / nifty_perf) * 100
+            if rs > 110:
+                score += 15
+                signals.append(f"Strong RS ({rs:.0f})")
+            elif rs > 100:
+                score += 8
+        else:
+            rs = 100
+        
+        # Only accept HIGH SCORES (stricter)
+        if score < 75:
+            return None
+        
+        # SMART TARGETS (based on ATR + resistance)
+        # SL: Below EMA20 or recent low
+        recent_low = low.iloc[-5:].min()
+        sl_ema = ema20.iloc[c] * 0.98
+        sl = max(recent_low * 0.99, sl_ema)
+        
+        risk = curr - sl
+        if risk <= 0: return None
+        
+        # Conservative targets (higher win rate)
+        tgt1 = curr + (risk * 1.5)  # 1.5R
+        tgt2 = curr + (risk * 2.5)  # 2.5R
+        
+        risk_pct = (risk / curr) * 100
+        if risk_pct > 4: return None  # Skip high-risk setups
+        
+        return {
+            "ticker": ticker.replace(".NS", ""),
+            "score": round(score, 1),
+            "price": round(curr, 2),
+            "rsi": round(rsi.iloc[c], 1),
+            "entry_type": "PULLBACK" if pullback and pullback['is_pullback_entry'] else "EARLY_BREAKOUT",
+            "sl": round(sl, 2),
+            "tgt1": round(tgt1, 2),
+            "tgt2": round(tgt2, 2),
+            "risk_pct": round(risk_pct, 2),
+            "rr_ratio": round((tgt1 - curr) / risk, 2),
+            "vol_quality": vol_analysis['quality'],
+            "mtf": mtf['alignment'] if mtf else "N/A",
+            "rs_rating": round(rs, 0),
+            "days_since_breakout": early['days_since_breakout'] if early else 0,
+            "signals": signals[:5]
+        }
+    except Exception as e:
+        return None
+
+# ============================================================
+# 📥 GET STOCKS
+# ============================================================
+def get_all_tickers():
     print("Fetching NSE stocks...")
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -137,304 +444,14 @@ def get_nse_tickers():
         r = requests.get(url, headers=headers, timeout=30)
         df = pd.read_csv(pd.io.common.StringIO(r.text))
         symbols = df["SYMBOL"].dropna().unique().tolist()
-        tickers = [f"{s.strip()}.NS" for s in symbols]
-        print(f"  NSE: {len(tickers)} stocks")
-        return tickers
-    except: pass
-    
-    try:
-        url = "https://raw.githubusercontent.com/gauravsdeshmukh/StockDataAnalysis/main/nse_stocks.csv"
-        df = pd.read_csv(url)
-        symbols = df["Symbol"].dropna().unique().tolist()
-        tickers = [f"{s.strip()}.NS" for s in symbols]
-        print(f"  NSE: {len(tickers)} stocks (via mirror)")
-        return tickers
+        return [f"{s.strip()}.NS" for s in symbols]
     except:
-        return ["RELIANCE.NS","TCS.NS","INFY.NS","HDFCBANK.NS"]
-
-# ============================================================
-# 📥 GET BSE STOCKS (NEW)
-# ============================================================
-def get_bse_tickers():
-    print("Fetching BSE stocks...")
-    try:
-        # Try BSE 500 list
-        url = "https://raw.githubusercontent.com/gauravsdeshmukh/StockDataAnalysis/main/bse_stocks.csv"
-        df = pd.read_csv(url)
-        symbols = df["Symbol"].dropna().unique().tolist()
-        tickers = [f"{s.strip()}.BO" for s in symbols[:500]]
-        print(f"  BSE: {len(tickers)} stocks")
-        return tickers
-    except:
-        pass
-    
-    # Backup BSE exclusive list
-    bse_exclusive = [
-        "BAJAJCON","VSTIND","3MINDIA","GILLETTE","PFIZER","SANOFI","ABBOTINDIA",
-        "HONAUT","TIPSINDLTD","SAREGAMA","NAVNETEDUL","EIDPARRY","JYOTHYLAB",
-        "SYMPHONY","TTKPRESTIG","WHIRLPOOL","VOLTAS","BLUESTARCO","HAWKINCOOK",
-        "AKZOINDIA","BALPHARMA","LGBBROSLTD","MAHINDCIE","MENONBE","NELCO",
-        "OMAXAUTO","PANAMAPET","QUINTEGRA","RANEENGINE","SAKUMA","TAINWALCHM",
-        "UDAIPURCEM","VBINDUSTRI","WABAG","XLENERGY","YASHOPTICS","ZOTA",
-        "ADORWELD","BAJAJHIND","CENTUM","DANLAW","ELECTHERM","JAINSTUDIO",
-        "KABRAEXTRU","LGBFORGE","MANGCHEFER","NATCOPHARM","OMKARCHEM","PRICOL",
-        "RANEHOLDNG","SBEC","TIRUMALCHM","UNITEDDR","VIVIDHA","WELSPUNIND",
-        "XCHANGING","YUKEN","ZENITHEXPO","AARTIIND","BLKASHYAP","CENTUM"
-    ]
-    tickers = [f"{s}.BO" for s in bse_exclusive]
-    print(f"  BSE: {len(tickers)} stocks (backup list)")
-    return tickers
-
-# ============================================================
-# 🌍 GLOBAL CONTEXT
-# ============================================================
-def get_global_context():
-    lines = []
-    score = 0
-    max_score = 8
-    try:
-        syms = ["^GSPC","^IXIC","^VIX","^INDIAVIX","DX-Y.NYB","CL=F","GC=F","^NSEI"]
-        data = yf.download(syms, period="30d", progress=False)
-        close = data["Close"]
-        
         try:
-            v = close["^GSPC"].dropna().iloc[-1]
-            a20 = close["^GSPC"].dropna().rolling(20).mean().iloc[-1]
-            if v > a20: score += 1; lines.append("  S&P500 : BULLISH")
-            else: lines.append("  S&P500 : WEAK")
-        except: pass
-        
-        try:
-            v = close["^IXIC"].dropna().iloc[-1]
-            a = close["^IXIC"].dropna().rolling(20).mean().iloc[-1]
-            if v > a: score += 1; lines.append("  Nasdaq  : BULLISH")
-            else: lines.append("  Nasdaq  : WEAK")
-        except: pass
-        
-        try:
-            vix = close["^VIX"].dropna().iloc[-1]
-            if vix < 16: score += 1; lines.append(f"  US VIX  : LOW ({vix:.1f})")
-            elif vix < 20: score += 0.5; lines.append(f"  US VIX  : MODERATE ({vix:.1f})")
-            else: lines.append(f"  US VIX  : HIGH ({vix:.1f})")
-        except: pass
-        
-        try:
-            ivix = close["^INDIAVIX"].dropna().iloc[-1]
-            if ivix < 14: score += 1; lines.append(f"  IND VIX : LOW ({ivix:.1f})")
-            elif ivix < 17: score += 0.5; lines.append(f"  IND VIX : MODERATE ({ivix:.1f})")
-            else: lines.append(f"  IND VIX : HIGH ({ivix:.1f})")
-        except: pass
-        
-        try:
-            dxy = close["DX-Y.NYB"].dropna().pct_change().iloc[-1] * 100
-            if dxy < 0.3: score += 1; lines.append(f"  DXY     : STABLE ({dxy:+.1f}%)")
-            else: lines.append(f"  DXY     : RISING ({dxy:+.1f}%)")
-        except: pass
-        
-        try:
-            crude_val = close["CL=F"].dropna().iloc[-1]
-            crude_chg = close["CL=F"].dropna().pct_change().iloc[-1] * 100
-            if crude_chg < 2: score += 1; lines.append(f"  Crude   : ${crude_val:.0f} ({crude_chg:+.1f}%)")
-            else: lines.append(f"  Crude   : ${crude_val:.0f} SPIKE")
-        except: pass
-        
-        try:
-            gold_val = close["GC=F"].dropna().iloc[-1]
-            gold_chg = close["GC=F"].dropna().pct_change(5).iloc[-1] * 100
-            lines.append(f"  Gold    : ${gold_val:.0f} ({gold_chg:+.1f}% 7D)")
-            if gold_chg < 2: score += 1
-        except: pass
-        
-        try:
-            nifty = close["^NSEI"].dropna()
-            nc = nifty.iloc[-1]
-            n20 = nifty.rolling(20).mean().iloc[-1]
-            n50 = nifty.rolling(50).mean().iloc[-1]
-            if nc > n20 > n50: score += 1; lines.append("  NIFTY   : STRONG UPTREND")
-            elif nc > n20: score += 0.5; lines.append("  NIFTY   : ABOVE 20DMA")
-            else: lines.append("  NIFTY   : WEAKENING")
-        except: pass
-        
-    except Exception as e:
-        lines.append(f"  Error: {str(e)[:40]}")
-    
-    pct = (score / max_score) * 100
-    if pct >= 75: verdict = f"STRONG ({score}/{max_score})"
-    elif pct >= 50: verdict = f"NEUTRAL ({score}/{max_score})"
-    else: verdict = f"WEAK ({score}/{max_score})"
-    
-    return {"lines": lines, "score": score, "verdict": verdict, "pct": pct}
-
-# ============================================================
-# 🎯 GENERIC ASSET SCANNER (Works for ALL asset types)
-# ============================================================
-def scan_asset(ticker, asset_type="stock", benchmark_close=None):
-    try:
-        # Different periods for different assets
-        period = "6mo" if asset_type in ["crypto", "commodity"] else "1y"
-        min_length = 50 if asset_type in ["crypto", "commodity"] else 100
-        
-        df = yf.download(ticker, period=period, progress=False, timeout=10)
-        if df is None or len(df) < min_length: return None
-        
-        close = df['Close'].squeeze()
-        high = df['High'].squeeze()
-        low = df['Low'].squeeze()
-        vol = df['Volume'].squeeze() if 'Volume' in df.columns else pd.Series([0]*len(df))
-        open_ = df['Open'].squeeze()
-        
-        # Skip very cheap stocks (except crypto)
-        if asset_type == "stock" and close.iloc[-1] < 30: return None
-        if asset_type == "stock" and vol.mean() < 50000: return None
-        
-        # Calculate indicators
-        ema9 = get_ema(close, 9)
-        ema21 = get_ema(close, 21)
-        ema50 = get_ema(close, 50)
-        rsi = get_rsi(close, 14)
-        macd, msig, mhist = get_macd(close)
-        bb_up, bb_mid, bb_low = get_bb(close, 20)
-        atr = get_atr(high, low, close, 14)
-        adx, plus_di, minus_di = get_adx(high, low, close)
-        roc = get_roc(close, 12)
-        
-        c = len(df) - 1
-        curr = close.iloc[c]
-        avg_vol = vol.rolling(20).mean().iloc[c] if vol.mean() > 0 else 1
-        vol_ratio = vol.iloc[c] / avg_vol if avg_vol > 0 else 1
-        
-        # Different filters for different assets
-        if asset_type == "stock":
-            ema200 = get_ema(close, 200)
-            if not (curr > ema21.iloc[c] > ema50.iloc[c] > ema200.iloc[c]): return None
-            if not (vol_ratio >= 1.5): return None
-            if not (50 <= rsi.iloc[c] <= 80): return None
-            if not (adx.iloc[c] > 20): return None
-        else:
-            # Relaxed filters for crypto/commodity
-            if not (curr > ema21.iloc[c] > ema50.iloc[c]): return None
-            if not (50 <= rsi.iloc[c] <= 80): return None
-            if not (macd.iloc[c] > msig.iloc[c]): return None
-        
-        # Scoring (100 points)
-        score = 0
-        signals = []
-        
-        # Trend
-        if asset_type == "stock" and curr > ema9.iloc[c] > ema21.iloc[c] > ema50.iloc[c]:
-            score += 20; signals.append("Perfect Stack")
-        elif curr > ema21.iloc[c] > ema50.iloc[c]:
-            score += 15
-        else:
-            score += 10
-        
-        # Volume (if applicable)
-        if vol.mean() > 0:
-            if vol_ratio >= 3: score += 15; signals.append("High Volume")
-            elif vol_ratio >= 2: score += 10
-            elif vol_ratio >= 1.5: score += 5
-        
-        # Momentum
-        if 60 <= rsi.iloc[c] <= 70: score += 15; signals.append("Ideal RSI")
-        elif 55 <= rsi.iloc[c] <= 75: score += 10
-        else: score += 5
-        
-        if roc.iloc[c] > 15: score += 10; signals.append("Strong Momentum")
-        elif roc.iloc[c] > 5: score += 5
-        
-        # ADX
-        if adx.iloc[c] >= 30: score += 10; signals.append("Strong Trend")
-        elif adx.iloc[c] >= 20: score += 5
-        
-        # RS Rating
-        if benchmark_close is not None:
-            rs_rating = calculate_rs_rating(close, benchmark_close)
-            if rs_rating >= 90: score += 15; signals.append("Top 10%")
-            elif rs_rating >= 75: score += 10
-            elif rs_rating >= 60: score += 5
-        else:
-            rs_rating = 50
-        
-        # 52W proximity (stocks/commodities only)
-        if asset_type != "crypto":
-            try:
-                high_52w = high.rolling(min(252, len(df))).max().iloc[c]
-                dist_52w = (high_52w - curr) / curr * 100
-                if dist_52w <= 3: score += 10; signals.append("Near High")
-                elif dist_52w <= 8: score += 5
-            except:
-                dist_52w = 0
-        else:
-            dist_52w = 0
-        
-        # Bollinger breakout
-        if curr >= bb_up.iloc[c] * 0.98:
-            score += 5; signals.append("BB Breakout")
-        
-        # SL & Targets
-        atr_stop = round(curr - (1.5 * atr.iloc[c]), 4)
-        ema_stop = round(ema21.iloc[c] * 0.97, 4)
-        sl = max(atr_stop, ema_stop)
-        
-        # Different target multipliers
-        tgt_mult = {
-            "stock": (2, 4, 6),
-            "commodity": (1.5, 3, 4.5),
-            "crypto": (3, 6, 10)
-        }
-        m1, m2, m3 = tgt_mult.get(asset_type, (2, 4, 6))
-        
-        tgt1 = round(curr + (m1 * atr.iloc[c]), 4)
-        tgt2 = round(curr + (m2 * atr.iloc[c]), 4)
-        tgt3 = round(curr + (m3 * atr.iloc[c]), 4)
-        
-        risk = curr - sl
-        reward = tgt1 - curr
-        rr_ratio = round(reward / risk, 2) if risk > 0 else 0
-        risk_pct = round((risk / curr) * 100, 2)
-        
-        return {
-            "ticker": ticker.replace(".NS","").replace(".BO","").replace("-USD","").replace("=F",""),
-            "type": asset_type,
-            "score": round(score, 1),
-            "price": round(curr, 4 if asset_type == "crypto" else 2),
-            "rsi": round(rsi.iloc[c], 1),
-            "adx": round(adx.iloc[c], 1),
-            "vol_ratio": round(vol_ratio, 1) if vol.mean() > 0 else 0,
-            "rs_rating": round(rs_rating, 0),
-            "roc": round(roc.iloc[c], 1),
-            "atr": round(atr.iloc[c], 4 if asset_type == "crypto" else 2),
-            "sl": sl, "tgt1": tgt1, "tgt2": tgt2, "tgt3": tgt3,
-            "rr_ratio": rr_ratio, "risk_pct": risk_pct,
-            "dist_52w": round(dist_52w, 1),
-            "signals": signals[:4]
-        }
-    except Exception as e:
-        return None
-
-# ============================================================
-# 🚀 IPO TRACKER
-# ============================================================
-def get_ipo_data():
-    print("Fetching IPO data...")
-    ipo_msg = "[IPO INTELLIGENCE]\n"
-    try:
-        url = "https://www.chittorgarh.com/ipo/ipo_list.asp"
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(url, headers=headers, timeout=15)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        tables = soup.find_all('table', {'class': 'table'})
-        if tables:
-            ipo_msg += "\nUpcoming/Open IPOs:\n"
-            for row in tables[0].find_all('tr')[1:5]:
-                cols = row.find_all('td')
-                if len(cols) >= 3:
-                    name = cols[0].text.strip()[:28]
-                    date = cols[1].text.strip() if len(cols) > 1 else "N/A"
-                    ipo_msg += f"- {name} | {date}\n"
-    except:
-        ipo_msg += "- Data unavailable\n"
-    return ipo_msg + "\n"
+            url = "https://raw.githubusercontent.com/gauravsdeshmukh/StockDataAnalysis/main/nse_stocks.csv"
+            df = pd.read_csv(url)
+            return [f"{s.strip()}.NS" for s in df["Symbol"].dropna().unique().tolist()]
+        except:
+            return ["RELIANCE.NS","TCS.NS","INFY.NS"]
 
 # ============================================================
 # 📤 TELEGRAM
@@ -442,16 +459,13 @@ def get_ipo_data():
 def send_telegram(msg):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        max_len = 3800
-        parts = [msg[i:i+max_len] for i in range(0, len(msg), max_len)]
-        for i, part in enumerate(parts, 1):
-            payload = {"chat_id": CHAT_ID, "text": part}
-            r = requests.post(url, json=payload, timeout=25)
-            print(f"[TELEGRAM] Part {i}/{len(parts)} - Status: {r.status_code}")
+        parts = [msg[i:i+3800] for i in range(0, len(msg), 3800)]
+        for part in parts:
+            requests.post(url, json={"chat_id": CHAT_ID, "text": part}, timeout=15)
             time.sleep(0.8)
         print("[TELEGRAM] Sent")
     except Exception as e:
-        print(f"[TELEGRAM ERROR] {e}")
+        print(f"[ERROR] {e}")
 
 # ============================================================
 # 🚀 MAIN
@@ -462,102 +476,77 @@ def main():
     print(datetime.now().strftime("%d %b %Y %I:%M %p"))
     print("=" * 60)
     
-    send_telegram(f"[STARTING] ARTHA {BOT_VERSION} multi-asset scan...")
+    send_telegram(f"[STARTING] ARTHA {BOT_VERSION} smart scan...")
     
-    # ── Global Context ──
-    print("\n[1/7] Global Context...")
-    ctx = get_global_context()
-    print(f"  {ctx['verdict']}")
+    # STEP 1: Check Market Regime (CRITICAL!)
+    print("\n[1/4] Checking Market Regime...")
+    regime = detect_market_regime()
+    print(f"  Regime: {regime['regime']} | Trade Allowed: {regime['trade_allowed']}")
     
-    # ── Fetch Benchmarks ──
-    print("\n[2/7] Benchmarks...")
+    # If market is BEAR or SIDEWAYS, don't recommend trades
+    if not regime['trade_allowed']:
+        msg = "=" * 40 + "\n"
+        msg += f"⚡ ARTHA {BOT_VERSION}\n"
+        msg += f"{BOT_TAGLINE}\n"
+        msg += f"📅 {datetime.now().strftime('%A, %d %b %Y')}\n"
+        msg += "=" * 40 + "\n\n"
+        msg += "[⚠️ MARKET REGIME WARNING]\n\n"
+        msg += f"Current Regime: {regime['regime']}\n"
+        msg += f"Nifty 20D Change: {regime['nifty_change_20d']:+.2f}%\n"
+        msg += f"Confidence: {regime['confidence']}%\n\n"
+        msg += "🚫 NO TRADES RECOMMENDED TODAY\n\n"
+        msg += "REASON:\n"
+        
+        if regime['regime'] == 'BEAR':
+            msg += "Market in downtrend. Most breakouts will fail.\n"
+            msg += "Even 'good' setups get sold into.\n"
+        elif regime['regime'] == 'SIDEWAYS':
+            msg += "Market is choppy. Breakouts are traps.\n"
+            msg += "Wait for clear trend to emerge.\n"
+        else:
+            msg += "Market direction unclear. Preserve capital.\n"
+        
+        msg += "\n💡 ARTHA SAYS:\n"
+        msg += "The best trade today is NO TRADE.\n"
+        msg += "Wait for market to align with your bias.\n\n"
+        msg += "Come back tomorrow. Cash is a position too.\n\n"
+        msg += "=" * 40 + "\n"
+        msg += f"{BOT_NAME} {BOT_VERSION}"
+        
+        send_telegram(msg)
+        return
+    
+    # STEP 2: Get Nifty benchmark
+    print("\n[2/4] Fetching Nifty...")
     try:
         nifty = yf.download("^NSEI", period="1y", progress=False)
         nifty_close = nifty['Close'].squeeze()
-    except: nifty_close = None
+    except:
+        nifty_close = None
     
-    try:
-        sp500 = yf.download("^GSPC", period="1y", progress=False)
-        sp500_close = sp500['Close'].squeeze()
-    except: sp500_close = None
+    # STEP 3: Smart Scan
+    print("\n[3/4] Smart Scanning Stocks...")
+    tickers = get_all_tickers()
+    print(f"Scanning {len(tickers)} stocks with SMART logic...\n")
     
-    try:
-        btc = yf.download("BTC-USD", period="6mo", progress=False)
-        btc_close = btc['Close'].squeeze()
-    except: btc_close = None
+    results = []
+    count = 0
+    for t in tickers:
+        count += 1
+        if count % 300 == 0:
+            print(f"  Progress: {count}/{len(tickers)} | Found: {len(results)}")
+        r = smart_scan_stock(t, nifty_close)
+        if r:
+            results.append(r)
     
-    # ── Scan NSE ──
-    print("\n[3/7] Scanning NSE stocks...")
-    nse_tickers = get_nse_tickers()
-    nse_results = []
-    for i, t in enumerate(nse_tickers):
-        if (i+1) % 300 == 0: print(f"  NSE: {i+1}/{len(nse_tickers)} | Found: {len(nse_results)}")
-        r = scan_asset(t, "stock", nifty_close)
-        if r and r["score"] >= 55: nse_results.append(r)
-    nse_results.sort(key=lambda x: x["score"], reverse=True)
-    print(f"  NSE: {len(nse_results)} elite setups")
+    results.sort(key=lambda x: x["score"], reverse=True)
     
-    # ── Scan BSE ──
-    print("\n[4/7] Scanning BSE stocks...")
-    bse_tickers = get_bse_tickers()
-    bse_results = []
-    for i, t in enumerate(bse_tickers):
-        if (i+1) % 100 == 0: print(f"  BSE: {i+1}/{len(bse_tickers)} | Found: {len(bse_results)}")
-        r = scan_asset(t, "stock", nifty_close)
-        if r and r["score"] >= 50: bse_results.append(r)
-    bse_results.sort(key=lambda x: x["score"], reverse=True)
-    print(f"  BSE: {len(bse_results)} elite setups")
+    # Take only TOP 3 (Quality over quantity)
+    top3 = results[:3]
+    print(f"\n[FOUND] {len(results)} HIGH-QUALITY setups")
+    print(f"[SELECTED] Top 3 for delivery")
     
-    # ── Scan Commodities ──
-    print("\n[5/7] Scanning Commodities...")
-    commodity_results = []
-    for name, ticker in COMMODITIES.items():
-        r = scan_asset(ticker, "commodity")
-        if r and r["score"] >= 45:
-            r["display_name"] = name
-            commodity_results.append(r)
-    for name, ticker in INDIAN_ETFS.items():
-        r = scan_asset(ticker, "stock", nifty_close)
-        if r and r["score"] >= 45:
-            r["display_name"] = name
-            commodity_results.append(r)
-    commodity_results.sort(key=lambda x: x["score"], reverse=True)
-    print(f"  Commodities: {len(commodity_results)} setups")
-    
-    # ── Scan Crypto ──
-    print("\n[6/7] Scanning Crypto...")
-    crypto_results = []
-    for name, ticker in CRYPTO.items():
-        r = scan_asset(ticker, "crypto", btc_close)
-        if r and r["score"] >= 45:
-            r["display_name"] = name
-            crypto_results.append(r)
-    crypto_results.sort(key=lambda x: x["score"], reverse=True)
-    print(f"  Crypto: {len(crypto_results)} setups")
-    
-    # ── Scan US Stocks ──
-    print("\n[7/7] Scanning US Stocks...")
-    us_results = []
-    for ticker in US_TOP_STOCKS:
-        r = scan_asset(ticker, "stock", sp500_close)
-        if r and r["score"] >= 55: us_results.append(r)
-    us_results.sort(key=lambda x: x["score"], reverse=True)
-    print(f"  US: {len(us_results)} setups")
-    
-    # ── IPO Data ──
-    ipo_data = get_ipo_data()
-    
-    # Get top picks
-    top_nse = nse_results[:5]
-    top_bse = bse_results[:3]
-    top_commodity = commodity_results[:2]
-    top_crypto = crypto_results[:2]
-    top_us = us_results[:2]
-    
-    total_scanned = len(nse_tickers) + len(bse_tickers) + len(COMMODITIES) + len(INDIAN_ETFS) + len(CRYPTO) + len(US_TOP_STOCKS)
-    total_found = len(nse_results) + len(bse_results) + len(commodity_results) + len(crypto_results) + len(us_results)
-    
-    # ── BUILD MESSAGE ──
+    # STEP 4: Build Report
     today = datetime.now().strftime("%A, %d %b %Y")
     msg = ""
     msg += "=" * 40 + "\n"
@@ -566,117 +555,87 @@ def main():
     msg += f"📅 {today}\n"
     msg += "=" * 40 + "\n\n"
     
-    # Global
-    msg += "[🌍 GLOBAL MARKETS]\n"
-    for line in ctx["lines"]: msg += line + "\n"
-    msg += f"Verdict: {ctx['verdict']}\n\n"
+    # Market Regime
+    msg += "[🌍 MARKET REGIME]\n"
+    msg += f"Status: {regime['regime']}\n"
+    msg += f"Nifty: {regime['nifty_price']} ({regime['nifty_change_20d']:+.2f}% 20D)\n"
+    msg += f"Confidence: {regime['confidence']}%\n"
+    msg += f"Trading: {'✅ ALLOWED' if regime['trade_allowed'] else '❌ BLOCKED'}\n\n"
     
-    # Coverage stats
-    msg += "[📊 MULTI-ASSET COVERAGE]\n"
-    msg += f"Total Scanned: {total_scanned:,} assets\n"
-    msg += f"NSE: {len(nse_tickers)} | BSE: {len(bse_tickers)}\n"
-    msg += f"Commodities: {len(COMMODITIES)+len(INDIAN_ETFS)} | Crypto: {len(CRYPTO)} | US: {len(US_TOP_STOCKS)}\n"
-    msg += f"Elite Setups Found: {total_found}\n\n"
+    msg += "[🎯 SCAN LOGIC]\n"
+    msg += "✓ Early breakouts only (Day 1-3)\n"
+    msg += "✓ Pullback entries (safer)\n"
+    msg += "✓ Multi-timeframe aligned\n"
+    msg += "✓ Institutional accumulation\n"
+    msg += "✓ Max 4% risk per trade\n"
+    msg += "✓ Only top 3 picks (quality)\n\n"
     
-    msg += ipo_data
+    msg += f"[📊 SCAN STATS]\n"
+    msg += f"Stocks scanned: {len(tickers)}\n"
+    msg += f"Passed filters: {len(results)}\n"
+    msg += f"Selected: Top 3\n\n"
     
-    # NSE Picks
-    if top_nse:
+    if top3:
         msg += "=" * 40 + "\n"
-        msg += "[🇮🇳 TOP 5 NSE BREAKOUTS]\n"
+        msg += "[🏆 TOP 3 SMART PICKS]\n"
         msg += "=" * 40 + "\n\n"
-        for i, s in enumerate(top_nse):
+        
+        for i, s in enumerate(top3):
             grade = "A+" if s['score'] >= 90 else "A" if s['score'] >= 80 else "B+"
+            
             msg += f"#{i+1} {s['ticker']} | {grade} ({s['score']}/100)\n"
-            msg += f"  Price: Rs.{s['price']} | RSI: {s['rsi']} | Vol: {s['vol_ratio']}x\n"
-            msg += f"  RS: {s['rs_rating']}/100 | ROC: {s['roc']:+.1f}%\n"
-            msg += f"  SL: Rs.{s['sl']} | T1: Rs.{s['tgt1']} | T2: Rs.{s['tgt2']}\n"
-            msg += f"  R:R = 1:{s['rr_ratio']} | Risk: {s['risk_pct']}%\n"
-            if s['signals']: msg += f"  Signals: {', '.join(s['signals'])}\n"
-            msg += "\n"
-    
-    # BSE Picks
-    if top_bse:
-        msg += "=" * 40 + "\n"
-        msg += "[🏢 TOP 3 BSE BREAKOUTS]\n"
-        msg += "=" * 40 + "\n\n"
-        for i, s in enumerate(top_bse):
-            grade = "A+" if s['score'] >= 85 else "A" if s['score'] >= 75 else "B+"
-            msg += f"#{i+1} {s['ticker']} | {grade} ({s['score']}/100)\n"
-            msg += f"  Price: Rs.{s['price']} | RSI: {s['rsi']}\n"
-            msg += f"  SL: Rs.{s['sl']} | T1: Rs.{s['tgt1']}\n"
+            msg += f"Entry Type: {s['entry_type']}\n\n"
+            
+            msg += f"📊 QUALITY METRICS:\n"
+            msg += f"  RSI: {s['rsi']} (Sweet spot)\n"
+            msg += f"  Volume: {s['vol_quality']}\n"
+            msg += f"  MTF Alignment: {s['mtf']}\n"
+            msg += f"  RS vs Nifty: {s['rs_rating']}/100\n"
+            
+            if s['days_since_breakout'] > 0:
+                msg += f"  Breakout Age: {s['days_since_breakout']} day(s)\n"
+            
+            msg += f"\n💰 TRADE SETUP:\n"
+            msg += f"  Entry: Rs.{s['price']}\n"
+            msg += f"  Stop Loss: Rs.{s['sl']} (Risk: {s['risk_pct']}%)\n"
+            msg += f"  Target 1: Rs.{s['tgt1']} (1.5R)\n"
+            msg += f"  Target 2: Rs.{s['tgt2']} (2.5R)\n"
             msg += f"  R:R = 1:{s['rr_ratio']}\n\n"
-    
-    # Commodities
-    if top_commodity:
-        msg += "=" * 40 + "\n"
-        msg += "[🥇 TOP COMMODITY BREAKOUTS]\n"
-        msg += "=" * 40 + "\n\n"
-        for i, s in enumerate(top_commodity):
-            name = s.get('display_name', s['ticker'])
-            msg += f"#{i+1} {name}\n"
-            msg += f"  Score: {s['score']}/100\n"
-            msg += f"  Price: ${s['price']} | RSI: {s['rsi']}\n"
-            msg += f"  SL: ${s['sl']} | Target: ${s['tgt1']}\n"
-            msg += f"  Trade via: MCX / ETFs (GOLDBEES/SILVERBEES)\n\n"
-    
-    # Crypto
-    if top_crypto:
-        msg += "=" * 40 + "\n"
-        msg += "[🪙 TOP CRYPTO BREAKOUTS]\n"
-        msg += "=" * 40 + "\n\n"
-        for i, s in enumerate(top_crypto):
-            name = s.get('display_name', s['ticker'])
-            msg += f"#{i+1} {name}\n"
-            msg += f"  Score: {s['score']}/100\n"
-            msg += f"  Price: ${s['price']} | RSI: {s['rsi']}\n"
-            msg += f"  SL: ${s['sl']} | T1: ${s['tgt1']} | T2: ${s['tgt2']}\n"
-            msg += f"  Trade via: CoinDCX, WazirX, Binance\n\n"
-    
-    # US Stocks
-    if top_us:
-        msg += "=" * 40 + "\n"
-        msg += "[🇺🇸 TOP US STOCK BREAKOUTS]\n"
-        msg += "=" * 40 + "\n\n"
-        for i, s in enumerate(top_us):
-            msg += f"#{i+1} {s['ticker']}\n"
-            msg += f"  Score: {s['score']}/100\n"
-            msg += f"  Price: ${s['price']} | RSI: {s['rsi']}\n"
-            msg += f"  RS vs S&P: {s['rs_rating']}/100\n"
-            msg += f"  SL: ${s['sl']} | T1: ${s['tgt1']}\n"
-            msg += f"  Trade via: Vested, INDmoney, Groww US\n\n"
-    
-    # Rules
-    msg += "=" * 40 + "\n"
-    msg += "[EXECUTION RULES]\n"
-    msg += "1. Enter only if breakout holds after market open\n"
-    msg += "2. Risk max 1-2% per trade\n"
-    msg += "3. Max 5 open positions across assets\n"
-    msg += "4. Book 40% at T1, trail rest\n"
-    msg += "5. NSE/BSE: Delivery-based swing trades\n"
-    msg += "6. Commodities: MCX or Gold/Silver ETFs\n"
-    msg += "7. Crypto: Only 5-10% of portfolio\n"
-    msg += "8. US Stocks: Long-term via Vested\n\n"
-    
-    msg += "[GRADE LEGEND]\n"
-    msg += "A+ (85+): Very High Conviction\n"
-    msg += "A  (75-84): High Conviction\n"
-    msg += "B+ (55-74): Moderate\n\n"
-    
-    # Advice
-    if ctx["pct"] >= 75:
-        advice = "All systems green. Deploy across assets."
-    elif ctx["pct"] >= 50:
-        advice = "Mixed signals. Focus on strongest picks."
+            
+            if s['signals']:
+                msg += f"✨ Signals: {', '.join(s['signals'])}\n"
+            
+            msg += "-" * 40 + "\n\n"
     else:
-        advice = "Markets weak. Consider commodities as hedge."
+        msg += "[❌ NO HIGH-QUALITY SETUPS TODAY]\n\n"
+        msg += "REASON:\n"
+        msg += "No stocks met our STRICT criteria:\n"
+        msg += "• Early breakout OR pullback\n"
+        msg += "• Multi-timeframe alignment\n"
+        msg += "• Institutional accumulation\n"
+        msg += "• Low risk (<4%)\n\n"
+        msg += "This is GOOD - No forced trades!\n"
+        msg += "Wait for perfect setup tomorrow.\n\n"
     
-    msg += f"[ARTHA SAYS] {advice}\n\n"
     msg += "=" * 40 + "\n"
-    msg += f"{BOT_NAME} {BOT_VERSION} | Educational only\n"
+    msg += "[📐 EXECUTION RULES]\n"
+    msg += "1. Enter only if price holds by 10:30 AM\n"
+    msg += "2. Risk only 1-2% capital per trade\n"
+    msg += "3. Book 50% at T1, trail rest\n"
+    msg += "4. Move SL to entry after T1 hit\n"
+    msg += "5. Exit if breakout fails within 2 days\n\n"
+    
+    msg += "[💡 KEY DIFFERENCE FROM v7.0]\n"
+    msg += "v7.0: 5 picks, many late/failing\n"
+    msg += "v8.0: 3 picks, all early/confirmed\n\n"
+    msg += "Fewer trades = Higher win rate\n"
+    msg += "Quality > Quantity always wins\n\n"
+    
+    msg += "=" * 40 + "\n"
+    msg += f"{BOT_NAME} {BOT_VERSION} | Educational only"
     
     send_telegram(msg)
-    print("\n[DONE] Multi-asset report sent!")
+    print("\n[DONE] Smart report sent!")
 
 if __name__ == "__main__":
     main()
