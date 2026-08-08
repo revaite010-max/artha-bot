@@ -1,0 +1,87 @@
+{
+  "version": "10.0",
+  "created": "2026-08-08T17:11:37.419971",
+  "last_updated": "2026-08-08T17:19:03.966538",
+  "total_picks": 2,
+  "total_wins": 0,
+  "total_losses": 0,
+  "pending_evaluations": {
+    "RAIN_20260808": {
+      "ticker": "RAIN",
+      "date": "2026-08-08T17:19:03.966518",
+      "entry_price": 222.88,
+      "sl": 218.89,
+      "tgt1": 228.87,
+      "tgt2": 232.86,
+      "score": 95.0,
+      "sector": "Other",
+      "entry_type": "PULLBACK",
+      "rsi": 56.8
+    },
+    "GPTHEALTH_20260808": {
+      "ticker": "GPTHEALTH",
+      "date": "2026-08-08T17:19:03.966532",
+      "entry_price": 159.44,
+      "sl": 155.91,
+      "tgt1": 164.74,
+      "tgt2": 168.27,
+      "score": 75.0,
+      "sector": "Other",
+      "entry_type": "PULLBACK",
+      "rsi": 62.0
+    }
+  },
+  "completed_trades": [],
+  "sector_performance": {},
+  "pattern_performance": {},
+  "score_range_performance": {},
+  "rsi_range_performance": {},
+  "learning_insights": [],
+  "ml_features": [
+    {
+      "ticker": "RAIN",
+      "date": "2026-08-08T17:19:03.966526",
+      "features": {
+        "rsi": 56.760459215125955,
+        "volatility": 3.216967494806913,
+        "vol_ratio": 4.146875373476369,
+        "price_position": 0.4640383932988134,
+        "roc_5": -0.03139361578279642,
+        "roc_20": 7.645497028607889,
+        "dist_ema20": 0.37491645526765405,
+        "dist_ema50": 9.240229871820391,
+        "atr_pct": 4.9030223465125236
+      }
+    },
+    {
+      "ticker": "GPTHEALTH",
+      "date": "2026-08-08T17:19:03.966535",
+      "features": {
+        "rsi": 62.02400589696378,
+        "volatility": 1.7691084548342062,
+        "vol_ratio": 0.8478095968826389,
+        "price_position": 0.6398808086627691,
+        "roc_5": -3.974940443025045,
+        "roc_20": 1.6191279769302858,
+        "dist_ema20": 0.21976758648496064,
+        "dist_ema50": 4.404869556188764,
+        "atr_pct": 3.8640324680248472
+      }
+    }
+  ],
+  "sentiment_history": {},
+  "user_feedback": {},
+  "active_positions": {},
+  "weights": {
+    "trend": 1.0,
+    "volume": 1.0,
+    "rsi": 1.0,
+    "sector_bonus": 1.0,
+    "early_breakout": 1.0,
+    "pullback": 1.0,
+    "sentiment": 1.0,
+    "institutional": 1.0
+  },
+  "ml_model_trained": false,
+  "last_ml_train": null
+}
