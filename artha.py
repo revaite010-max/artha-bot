@@ -1,3 +1,9 @@
+"""
+ARTHA v11.0 - Ultimate Trading System
+Features: Confirmation Delay + Backtesting + Sector Rotation + 
+          Enhanced ML + Advanced Risk Management
+"""
+
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -6,46 +12,40 @@ from bs4 import BeautifulSoup
 import os
 import time
 import json
-import hashlib
 from datetime import datetime, timedelta
 from urllib.parse import quote
 import warnings
 warnings.filterwarnings('ignore')
 
-# ML Imports (with fallback)
+# ML Imports
 try:
-    from sklearn.ensemble import GradientBoostingClassifier
+    from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
     from sklearn.preprocessing import StandardScaler
-    from sklearn.model_selection import TimeSeriesSplit
+    from sklearn.model_selection import cross_val_score
     ML_AVAILABLE = True
 except ImportError:
     ML_AVAILABLE = False
-    print("Warning: sklearn not available. ML features disabled.")
 
-# ============================================================
-# 🔑 CONFIGURATION
-# ============================================================
+# Configuration
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHAT_ID = os.environ.get("CHAT_ID", "")
-
-# Broker Credentials (Optional)
 KITE_API_KEY = os.environ.get("KITE_API_KEY", "")
 KITE_ACCESS_TOKEN = os.environ.get("KITE_ACCESS_TOKEN", "")
 
 BOT_NAME = "⚡ ARTHA"
-BOT_VERSION = "v10.0"
-BOT_TAGLINE = "Institutional-Grade AI System"
+BOT_VERSION = "v11.0"
+BOT_TAGLINE = "Ultimate Trading System"
 
 MEMORY_FILE = "artha_memory.json"
 
-# Portfolio Configuration
-TOTAL_CAPITAL = 100000  # Rs.1L default (user can change)
-MAX_PORTFOLIO_HEAT = 6  # Max 6% total portfolio risk at once
-MAX_SECTOR_EXPOSURE = 2  # Max 2 stocks per sector
-MAX_CORRELATED_POSITIONS = 2
+# Enhanced Portfolio Config
+TOTAL_CAPITAL = 100000
+MAX_PORTFOLIO_HEAT = 5  # Reduced from 6% for safety
+MAX_SECTOR_EXPOSURE = 2
+BASE_RISK_PER_TRADE = 1.0  # Base 1%, adjusted by regime
 
 # ============================================================
-# 🧠 MEMORY SYSTEM (Enhanced)
+# 🧠 ENHANCED MEMORY SYSTEM
 # ============================================================
 
 def load_memory():
@@ -53,27 +53,26 @@ def load_memory():
         try:
             with open(MEMORY_FILE, 'r') as f:
                 mem = json.load(f)
-                # Ensure new fields exist
-                if 'ml_features' not in mem:
-                    mem['ml_features'] = []
-                if 'sentiment_history' not in mem:
-                    mem['sentiment_history'] = {}
-                if 'user_feedback' not in mem:
-                    mem['user_feedback'] = {}
-                if 'active_positions' not in mem:
-                    mem['active_positions'] = {}
+                for key in ['ml_features', 'sentiment_history', 'user_feedback',
+                           'active_positions', 'backtest_results', 'sector_history',
+                           'confirmation_queue']:
+                    if key not in mem:
+                        mem[key] = {} if key.endswith('_history') or key == 'user_feedback' or key == 'active_positions' or key == 'backtest_results' or key == 'confirmation_queue' else []
+                if 'sector_rotation_data' not in mem:
+                    mem['sector_rotation_data'] = {}
                 return mem
         except:
             pass
     
     return {
-        "version": "10.0",
+        "version": "11.0",
         "created": datetime.now().isoformat(),
         "last_updated": datetime.now().isoformat(),
         "total_picks": 0,
         "total_wins": 0,
         "total_losses": 0,
         "pending_evaluations": {},
+        "confirmation_queue": {},  # Stocks awaiting confirmation
         "completed_trades": [],
         "sector_performance": {},
         "pattern_performance": {},
@@ -84,10 +83,13 @@ def load_memory():
         "sentiment_history": {},
         "user_feedback": {},
         "active_positions": {},
+        "backtest_results": {},
+        "sector_rotation_data": {},
         "weights": {
             "trend": 1.0, "volume": 1.0, "rsi": 1.0,
             "sector_bonus": 1.0, "early_breakout": 1.0,
-            "pullback": 1.0, "sentiment": 1.0, "institutional": 1.0
+            "pullback": 1.0, "sentiment": 1.0, "institutional": 1.0,
+            "sector_rotation": 1.0, "multi_timeframe": 1.0
         },
         "ml_model_trained": False,
         "last_ml_train": None
@@ -99,239 +101,319 @@ def save_memory(memory):
         json.dump(memory, f, indent=2)
 
 # ============================================================
-# 📰 MODULE 1: NEWS SENTIMENT ANALYSIS
+# 🧮 CORE MATH FUNCTIONS
 # ============================================================
 
-# Simple VADER-like sentiment word lists
-POSITIVE_WORDS = [
-    'growth', 'profit', 'surge', 'jump', 'rally', 'gain', 'rise', 'up', 'high',
-    'strong', 'bullish', 'positive', 'beat', 'exceed', 'record', 'upgrade',
-    'buy', 'outperform', 'award', 'launch', 'expansion', 'acquire', 'merger',
-    'dividend', 'bonus', 'success', 'boost', 'soar', 'climb', 'advance',
-    'breakthrough', 'winning', 'excellent', 'strong', 'robust', 'solid',
-    'expansion', 'orders', 'contract', 'deal', 'partnership', 'approval'
-]
+def get_ema(s, n): return s.ewm(span=n, adjust=False).mean()
+def get_sma(s, n): return s.rolling(n).mean()
 
-NEGATIVE_WORDS = [
-    'loss', 'fall', 'drop', 'decline', 'crash', 'plunge', 'weak', 'bearish',
-    'negative', 'miss', 'downgrade', 'sell', 'underperform', 'scandal',
-    'fraud', 'probe', 'investigation', 'penalty', 'fine', 'lawsuit', 'debt',
-    'bankruptcy', 'default', 'warning', 'concern', 'risk', 'slump', 'tumble',
-    'crisis', 'trouble', 'issue', 'problem', 'delay', 'cancel', 'reject',
-    'downgrade', 'exit', 'resign', 'layoff', 'closure', 'suspension'
-]
+def get_rsi(s, n=14):
+    delta = s.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(n).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(n).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
 
-def get_google_news_sentiment(ticker_name):
-    """Fetch and analyze news sentiment from Google News"""
-    try:
-        # Google News RSS feed
-        query = quote(f"{ticker_name} stock NSE India")
-        url = f"https://news.google.com/rss/search?q={query}&hl=en-IN&gl=IN&ceid=IN:en"
-        
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        r = requests.get(url, headers=headers, timeout=10)
-        
-        soup = BeautifulSoup(r.content, 'xml')
-        items = soup.find_all('item')[:10]  # Latest 10 news
-        
-        if not items:
-            return {"sentiment": "NEUTRAL", "score": 0, "count": 0, "confidence": 0}
-        
-        total_score = 0
-        pos_count = 0
-        neg_count = 0
-        
-        for item in items:
-            title = item.find('title').text.lower() if item.find('title') else ""
+def get_macd(s):
+    ema12 = get_ema(s, 12)
+    ema26 = get_ema(s, 26)
+    macd = ema12 - ema26
+    signal = macd.ewm(span=9, adjust=False).mean()
+    return macd, signal
+
+def get_atr(high, low, close, n=14):
+    tr1 = high - low
+    tr2 = abs(high - close.shift())
+    tr3 = abs(low - close.shift())
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    return tr.rolling(n).mean()
+
+def get_bb(s, n=20, std=2):
+    sma = s.rolling(n).mean()
+    stdev = s.rolling(n).std()
+    return sma + (std * stdev), sma, sma - (std * stdev)
+
+# ============================================================
+# 🎯 IMPROVEMENT #1: CONFIRMATION DELAY
+# ============================================================
+
+def add_to_confirmation_queue(memory, ticker, price, sl, tgt1, tgt2, score, sector, entry_type):
+    """Add stock to 2-day confirmation queue"""
+    queue_id = f"{ticker}_{datetime.now().strftime('%Y%m%d')}"
+    
+    memory['confirmation_queue'][queue_id] = {
+        "ticker": ticker,
+        "detected_date": datetime.now().isoformat(),
+        "detected_price": price,
+        "detected_sl": sl,
+        "detected_tgt1": tgt1,
+        "detected_tgt2": tgt2,
+        "score": score,
+        "sector": sector,
+        "entry_type": entry_type,
+        "confirmation_days": 0,
+        "status": "PENDING_CONFIRMATION"
+    }
+    return memory
+
+def check_confirmations(memory):
+    """Check pending confirmations - must hold for 2 days"""
+    confirmed_picks = []
+    to_remove = []
+    
+    for queue_id, item in memory['confirmation_queue'].items():
+        try:
+            days_old = (datetime.now() - datetime.fromisoformat(item['detected_date'])).days
             
-            # Skip if not related
-            if ticker_name.lower() not in title:
+            ticker = item['ticker']
+            df = yf.download(f"{ticker}.NS", period="10d", progress=False, timeout=10)
+            
+            if len(df) < days_old + 1:
                 continue
             
-            pos_hits = sum(1 for word in POSITIVE_WORDS if word in title)
-            neg_hits = sum(1 for word in NEGATIVE_WORDS if word in title)
+            current_price = df['Close'].iloc[-1]
+            detected_price = item['detected_price']
             
-            score = pos_hits - neg_hits
-            total_score += score
+            # Confirmation criteria
+            still_above_breakout = current_price >= detected_price * 0.98
+            volume_holding = df['Volume'].iloc[-days_old:].mean() >= df['Volume'].iloc[-20:-days_old].mean() * 0.8
+            no_reversal = current_price >= detected_price * 0.97
             
-            if score > 0:
-                pos_count += 1
-            elif score < 0:
-                neg_count += 1
+            confirmations = sum([still_above_breakout, volume_holding, no_reversal])
+            
+            if days_old >= 2:
+                if confirmations >= 2:
+                    # CONFIRMED - Add to active picks
+                    item['status'] = "CONFIRMED"
+                    item['confirmed_date'] = datetime.now().isoformat()
+                    item['confirmed_price'] = current_price
+                    item['confirmations_passed'] = confirmations
+                    confirmed_picks.append(item)
+                    to_remove.append(queue_id)
+                else:
+                    # FAILED - Remove
+                    to_remove.append(queue_id)
+                    print(f"  {ticker}: Failed confirmation ({confirmations}/3)")
+        except:
+            continue
+    
+    # Remove processed items
+    for qid in to_remove:
+        del memory['confirmation_queue'][qid]
+    
+    return memory, confirmed_picks
+
+# ============================================================
+# 🎯 IMPROVEMENT #2: BACKTESTING ENGINE
+# ============================================================
+
+def backtest_ticker(ticker, period="1y"):
+    """Backtest strategy on historical data"""
+    try:
+        df = yf.download(f"{ticker}.NS", period=period, progress=False, timeout=10)
+        if len(df) < 100:
+            return None
         
-        total_analyzed = pos_count + neg_count
+        close = df['Close'].squeeze()
+        high = df['High'].squeeze()
+        low = df['Low'].squeeze()
+        volume = df['Volume'].squeeze()
         
-        if total_analyzed == 0:
-            return {"sentiment": "NEUTRAL", "score": 0, "count": 0, "confidence": 0}
+        ema20 = get_ema(close, 20)
+        ema50 = get_ema(close, 50)
+        ema200 = get_ema(close, 200)
+        rsi = get_rsi(close, 14)
+        macd, msig = get_macd(close)
+        atr = get_atr(high, low, close, 14)
         
-        avg_score = total_score / len(items)
+        trades = []
+        position = None
         
-        # Determine sentiment
-        if avg_score >= 1.5:
-            sentiment = "VERY_BULLISH"
-        elif avg_score >= 0.5:
-            sentiment = "BULLISH"
-        elif avg_score <= -1.5:
-            sentiment = "VERY_BEARISH"
-        elif avg_score <= -0.5:
-            sentiment = "BEARISH"
-        else:
-            sentiment = "NEUTRAL"
+        for i in range(60, len(df)):
+            curr_close = close.iloc[i]
+            
+            # Check for entry
+            if position is None:
+                # Entry conditions
+                if (curr_close > ema20.iloc[i] > ema50.iloc[i] > ema200.iloc[i] and
+                    55 <= rsi.iloc[i] <= 70 and
+                    macd.iloc[i] > msig.iloc[i] and
+                    high.iloc[i] > high.iloc[i-20:i].max()):
+                    
+                    entry_price = curr_close
+                    stop_loss = ema20.iloc[i] * 0.98
+                    target = entry_price + (2 * atr.iloc[i])
+                    
+                    position = {
+                        "entry_date": df.index[i],
+                        "entry": entry_price,
+                        "sl": stop_loss,
+                        "tgt": target
+                    }
+            
+            # Check for exit
+            elif position is not None:
+                if high.iloc[i] >= position['tgt']:
+                    pnl = ((position['tgt'] - position['entry']) / position['entry']) * 100
+                    trades.append({
+                        "outcome": "WIN",
+                        "return": round(pnl, 2),
+                        "days": (df.index[i] - position['entry_date']).days
+                    })
+                    position = None
+                elif low.iloc[i] <= position['sl']:
+                    pnl = ((position['sl'] - position['entry']) / position['entry']) * 100
+                    trades.append({
+                        "outcome": "LOSS",
+                        "return": round(pnl, 2),
+                        "days": (df.index[i] - position['entry_date']).days
+                    })
+                    position = None
         
-        confidence = min(100, (total_analyzed / 10) * 100)
+        if not trades:
+            return None
+        
+        wins = [t for t in trades if t['outcome'] == 'WIN']
+        losses = [t for t in trades if t['outcome'] == 'LOSS']
         
         return {
-            "sentiment": sentiment,
-            "score": round(avg_score, 2),
-            "count": total_analyzed,
-            "positive": pos_count,
-            "negative": neg_count,
-            "confidence": round(confidence, 0)
-        }
-    except Exception as e:
-        return {"sentiment": "NEUTRAL", "score": 0, "count": 0, "confidence": 0}
-
-# ============================================================
-# 🐋 MODULE 1B: INSTITUTIONAL ACTIVITY MONITOR
-# ============================================================
-
-def check_bulk_deals(ticker_name):
-    """Check NSE bulk deals for institutional activity"""
-    try:
-        # NSE Bulk deals page
-        url = "https://www.nseindia.com/api/historical/bulk-deals"
-        headers = {
-            'User-Agent': 'Mozilla/5.0',
-            'Accept': 'application/json',
-            'Referer': 'https://www.nseindia.com/'
-        }
-        
-        # Try to fetch (NSE may block, so we handle gracefully)
-        session = requests.Session()
-        session.headers.update(headers)
-        
-        # Try alternative source - moneycontrol
-        mc_url = f"https://www.moneycontrol.com/stocks/marketstats/bulk-deals.php"
-        r = session.get(mc_url, timeout=10)
-        
-        if r.status_code == 200:
-            soup = BeautifulSoup(r.text, 'html.parser')
-            # Simple check if stock appears in recent bulk deals
-            text = r.text.lower()
-            if ticker_name.lower() in text:
-                # Try to determine buy vs sell
-                idx = text.find(ticker_name.lower())
-                nearby = text[max(0, idx-500):idx+500]
-                
-                buy_count = nearby.count('buy')
-                sell_count = nearby.count('sell')
-                
-                if buy_count > sell_count:
-                    return {"activity": "INSTITUTIONAL_BUYING", "score": 10}
-                elif sell_count > buy_count:
-                    return {"activity": "INSTITUTIONAL_SELLING", "score": -15}
-        
-        return {"activity": "NORMAL", "score": 0}
-    except:
-        return {"activity": "UNKNOWN", "score": 0}
-
-def check_fii_dii_flow():
-    """Check overall FII/DII flow"""
-    try:
-        # Fallback: Use Nifty trend as proxy
-        nifty = yf.download("^NSEI", period="5d", progress=False)
-        change_3d = ((nifty['Close'].iloc[-1] - nifty['Close'].iloc[-4]) / nifty['Close'].iloc[-4]) * 100
-        
-        if change_3d > 1:
-            return {"flow": "FII_BUYING", "trend": "POSITIVE", "score": 10}
-        elif change_3d < -1:
-            return {"flow": "FII_SELLING", "trend": "NEGATIVE", "score": -10}
-        else:
-            return {"flow": "MIXED", "trend": "NEUTRAL", "score": 0}
-    except:
-        return {"flow": "UNKNOWN", "trend": "NEUTRAL", "score": 0}
-
-# ============================================================
-# 🛡️ MODULE 2: RISK MANAGEMENT (Kelly + ATR + Correlation)
-# ============================================================
-
-def calculate_kelly_position_size(win_rate, avg_win, avg_loss, capital):
-    """Kelly Criterion for optimal position sizing"""
-    try:
-        if avg_loss == 0 or win_rate == 0:
-            return capital * 0.02  # Default 2%
-        
-        # Kelly formula: f = (bp - q) / b
-        # where b = avg_win/avg_loss, p = win_rate, q = 1-win_rate
-        win_rate_dec = win_rate / 100
-        loss_rate = 1 - win_rate_dec
-        b = abs(avg_win / avg_loss) if avg_loss != 0 else 1
-        
-        kelly_fraction = (b * win_rate_dec - loss_rate) / b
-        
-        # Use HALF Kelly for safety (Kelly can be aggressive)
-        kelly_fraction = max(0.01, min(0.05, kelly_fraction * 0.5))
-        
-        return capital * kelly_fraction
-    except:
-        return capital * 0.02
-
-def calculate_atr_position_size(entry_price, atr, capital, risk_percent=1.5):
-    """ATR-based volatility position sizing"""
-    try:
-        risk_amount = capital * (risk_percent / 100)
-        stop_distance = atr * 1.5  # 1.5 ATR stop
-        
-        if stop_distance <= 0:
-            return {"shares": 0, "value": 0, "risk": 0}
-        
-        shares = int(risk_amount / stop_distance)
-        position_value = shares * entry_price
-        actual_risk = shares * stop_distance
-        
-        # Cap at 20% of capital
-        max_position = capital * 0.2
-        if position_value > max_position:
-            shares = int(max_position / entry_price)
-            position_value = shares * entry_price
-            actual_risk = shares * stop_distance
-        
-        return {
-            "shares": shares,
-            "value": round(position_value, 2),
-            "risk": round(actual_risk, 2),
-            "risk_percent": round((actual_risk / capital) * 100, 2)
+            "total_trades": len(trades),
+            "wins": len(wins),
+            "losses": len(losses),
+            "win_rate": round((len(wins) / len(trades)) * 100, 1),
+            "avg_win": round(sum(t['return'] for t in wins) / len(wins), 2) if wins else 0,
+            "avg_loss": round(sum(t['return'] for t in losses) / len(losses), 2) if losses else 0,
+            "avg_days": round(sum(t['days'] for t in trades) / len(trades), 1),
+            "total_return": round(sum(t['return'] for t in trades), 2)
         }
     except:
-        return {"shares": 0, "value": 0, "risk": 0}
+        return None
 
-def check_correlation_guard(new_pick, existing_picks, memory):
-    """Prevent over-concentration in correlated stocks"""
-    if not existing_picks:
-        return {"allowed": True, "reason": "First pick"}
+def get_backtest_score(ticker, memory):
+    """Get historical performance score for ticker"""
+    if ticker in memory.get('backtest_results', {}):
+        cached = memory['backtest_results'][ticker]
+        cache_age = (datetime.now() - datetime.fromisoformat(cached.get('date', '2020-01-01'))).days
+        if cache_age < 30:
+            return cached.get('data')
     
-    new_sector = new_pick.get('sector', 'Unknown')
-    
-    # Count existing picks in same sector
-    sector_count = sum(1 for p in existing_picks if p.get('sector') == new_sector)
-    
-    if sector_count >= MAX_SECTOR_EXPOSURE:
-        return {"allowed": False, "reason": f"Max {MAX_SECTOR_EXPOSURE} stocks per sector reached ({new_sector})"}
-    
-    # Check total portfolio heat
-    total_risk = sum(p.get('risk_percent', 0) for p in existing_picks) + new_pick.get('risk_percent', 0)
-    
-    if total_risk > MAX_PORTFOLIO_HEAT:
-        return {"allowed": False, "reason": f"Portfolio heat too high ({total_risk:.1f}% > {MAX_PORTFOLIO_HEAT}%)"}
-    
-    return {"allowed": True, "reason": "Passed all correlation checks"}
+    result = backtest_ticker(ticker)
+    if result:
+        memory['backtest_results'][ticker] = {
+            "date": datetime.now().isoformat(),
+            "data": result
+        }
+    return result
 
 # ============================================================
-# 🤖 MODULE 3: MACHINE LEARNING ENGINE
+# 🎯 IMPROVEMENT #3: SECTOR ROTATION INTELLIGENCE
 # ============================================================
 
-def extract_ml_features(df, ticker_name):
-    """Extract features for ML model"""
+NIFTY_SECTORS = {
+    "IT": "^CNXIT",
+    "Banking": "^NSEBANK",
+    "Auto": "^CNXAUTO",
+    "Pharma": "^CNXPHARMA",
+    "FMCG": "^CNXFMCG",
+    "Metal": "^CNXMETAL",
+    "Realty": "^CNXREALTY",
+    "Energy": "^CNXENERGY",
+    "PSU Bank": "^CNXPSUBANK",
+    "Finance": "^CNXFIN"
+}
+
+def analyze_sector_rotation():
+    """Advanced sector rotation analysis"""
+    sector_scores = {}
+    
+    for sector, symbol in NIFTY_SECTORS.items():
+        try:
+            df = yf.download(symbol, period="3mo", progress=False, timeout=10)
+            if len(df) < 50:
+                continue
+            
+            close = df['Close']
+            
+            # Multi-period returns
+            ret_5d = ((close.iloc[-1] - close.iloc[-5]) / close.iloc[-5]) * 100
+            ret_20d = ((close.iloc[-1] - close.iloc[-20]) / close.iloc[-20]) * 100
+            ret_60d = ((close.iloc[-1] - close.iloc[-60]) / close.iloc[-60]) * 100
+            
+            # Trend strength
+            ema20 = close.ewm(span=20).mean()
+            ema50 = close.ewm(span=50).mean()
+            
+            trend_score = 0
+            if close.iloc[-1] > ema20.iloc[-1]: trend_score += 1
+            if ema20.iloc[-1] > ema50.iloc[-1]: trend_score += 1
+            
+            # Momentum acceleration
+            momentum_recent = ret_5d
+            momentum_older = ((close.iloc[-10] - close.iloc[-15]) / close.iloc[-15]) * 100 if len(close) > 15 else 0
+            accelerating = momentum_recent > momentum_older
+            
+            # Combined score
+            momentum_score = (ret_5d * 0.4) + (ret_20d * 0.35) + (ret_60d * 0.25)
+            total_score = momentum_score + (trend_score * 3) + (5 if accelerating else 0)
+            
+            sector_scores[sector] = {
+                "score": round(total_score, 2),
+                "ret_5d": round(ret_5d, 2),
+                "ret_20d": round(ret_20d, 2),
+                "ret_60d": round(ret_60d, 2),
+                "trend_strength": trend_score,
+                "accelerating": accelerating,
+                "phase": get_sector_phase(ret_5d, ret_20d, ret_60d)
+            }
+        except:
+            continue
+    
+    ranked = sorted(sector_scores.items(), key=lambda x: x[1]['score'], reverse=True)
+    
+    return {
+        "hot_sectors": [s[0] for s in ranked[:3]],
+        "warm_sectors": [s[0] for s in ranked[3:5]],
+        "cold_sectors": [s[0] for s in ranked[-3:]],
+        "all_scores": sector_scores,
+        "top_3_details": ranked[:3]
+    }
+
+def get_sector_phase(ret_5d, ret_20d, ret_60d):
+    """Identify sector phase"""
+    if ret_5d > 3 and ret_20d > 5:
+        return "ACCELERATING"
+    elif ret_5d > 1 and ret_20d > 3:
+        return "GROWING"
+    elif abs(ret_5d) < 1 and abs(ret_20d) < 2:
+        return "CONSOLIDATING"
+    elif ret_5d < -2:
+        return "DECLINING"
+    else:
+        return "NEUTRAL"
+
+def get_sector_bonus(stock_sector, sector_data):
+    """Get bonus based on sector strength"""
+    hot_sectors = sector_data.get('hot_sectors', [])
+    warm_sectors = sector_data.get('warm_sectors', [])
+    cold_sectors = sector_data.get('cold_sectors', [])
+    
+    if stock_sector in hot_sectors[:1]:  # #1 sector
+        return {"bonus": 20, "label": "TOP SECTOR"}
+    elif stock_sector in hot_sectors:
+        return {"bonus": 15, "label": "HOT SECTOR"}
+    elif stock_sector in warm_sectors:
+        return {"bonus": 8, "label": "WARM SECTOR"}
+    elif stock_sector in cold_sectors:
+        return {"bonus": -20, "label": "COLD SECTOR - AVOID"}
+    else:
+        return {"bonus": 0, "label": "NEUTRAL"}
+
+# ============================================================
+# 🎯 IMPROVEMENT #4: ENHANCED ML WITH MORE FEATURES
+# ============================================================
+
+def extract_enhanced_features(df, sector_data, stock_sector, memory):
+    """Extract 15+ features for ML"""
     try:
         close = df['Close'].squeeze()
         high = df['High'].squeeze()
@@ -340,21 +422,15 @@ def extract_ml_features(df, ticker_name):
         
         c = len(df) - 1
         
-        # Technical features
-        ema20 = close.ewm(span=20, adjust=False).mean()
-        ema50 = close.ewm(span=50, adjust=False).mean()
+        # Technical
+        ema20 = close.ewm(span=20).mean()
+        ema50 = close.ewm(span=50).mean()
+        rsi = get_rsi(close, 14)
+        atr = get_atr(high, low, close, 14)
         
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0).rolling(14).mean()
-        loss = -delta.where(delta < 0, 0).rolling(14).mean()
-        rsi = 100 - (100 / (1 + gain/loss))
-        
-        # Volatility
-        returns = close.pct_change()
-        volatility = returns.rolling(20).std().iloc[c] * 100
-        
-        # Volume ratio
+        # Basic features
         vol_ratio = vol.iloc[c] / vol.rolling(20).mean().iloc[c]
+        volatility = close.pct_change().rolling(20).std().iloc[c] * 100
         
         # Price position
         price_position = (close.iloc[c] - close.rolling(20).min().iloc[c]) / (close.rolling(20).max().iloc[c] - close.rolling(20).min().iloc[c])
@@ -363,17 +439,36 @@ def extract_ml_features(df, ticker_name):
         roc_5 = ((close.iloc[c] - close.iloc[c-5]) / close.iloc[c-5]) * 100
         roc_20 = ((close.iloc[c] - close.iloc[c-20]) / close.iloc[c-20]) * 100
         
-        # Distance from EMAs
+        # EMA distances
         dist_ema20 = ((close.iloc[c] - ema20.iloc[c]) / ema20.iloc[c]) * 100
         dist_ema50 = ((close.iloc[c] - ema50.iloc[c]) / ema50.iloc[c]) * 100
         
-        # ATR
-        tr1 = high - low
-        tr2 = abs(high - close.shift())
-        tr3 = abs(low - close.shift())
-        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-        atr = tr.rolling(14).mean().iloc[c]
-        atr_pct = (atr / close.iloc[c]) * 100
+        atr_pct = (atr.iloc[c] / close.iloc[c]) * 100
+        
+        # Sector features
+        sector_score = 0
+        sector_phase_score = 0
+        if stock_sector in sector_data.get('all_scores', {}):
+            sec = sector_data['all_scores'][stock_sector]
+            sector_score = sec['score']
+            phase = sec.get('phase', 'NEUTRAL')
+            phase_scores = {"ACCELERATING": 10, "GROWING": 7, "CONSOLIDATING": 3, "NEUTRAL": 0, "DECLINING": -5}
+            sector_phase_score = phase_scores.get(phase, 0)
+        
+        # Historical sector performance
+        sector_win_rate = 0.5
+        if stock_sector in memory.get('sector_performance', {}):
+            sp = memory['sector_performance'][stock_sector]
+            if sp.get('count', 0) >= 3:
+                sector_win_rate = sp.get('win_rate', 50) / 100
+        
+        # Volume trend
+        vol_ma5 = vol.rolling(5).mean().iloc[c]
+        vol_ma20 = vol.rolling(20).mean().iloc[c]
+        volume_trend = vol_ma5 / vol_ma20 if vol_ma20 > 0 else 1
+        
+        # Price stability (lower is better for consolidation)
+        price_stability = close.iloc[-10:].std() / close.iloc[c]
         
         return {
             "rsi": float(rsi.iloc[c]) if not pd.isna(rsi.iloc[c]) else 50,
@@ -384,24 +479,29 @@ def extract_ml_features(df, ticker_name):
             "roc_20": float(roc_20) if not pd.isna(roc_20) else 0,
             "dist_ema20": float(dist_ema20) if not pd.isna(dist_ema20) else 0,
             "dist_ema50": float(dist_ema50) if not pd.isna(dist_ema50) else 0,
-            "atr_pct": float(atr_pct) if not pd.isna(atr_pct) else 2
+            "atr_pct": float(atr_pct) if not pd.isna(atr_pct) else 2,
+            "sector_score": float(sector_score),
+            "sector_phase_score": float(sector_phase_score),
+            "sector_win_rate": float(sector_win_rate),
+            "volume_trend": float(volume_trend) if not pd.isna(volume_trend) else 1,
+            "price_stability": float(price_stability) if not pd.isna(price_stability) else 0.02,
+            "market_hour": float(datetime.now().hour)
         }
     except Exception as e:
         return None
 
-def train_ml_model(memory):
-    """Train ML model on historical trade features"""
+def train_enhanced_ml(memory):
+    """Train enhanced ML model"""
     if not ML_AVAILABLE:
         return None
     
     features_data = memory.get('ml_features', [])
     completed = memory.get('completed_trades', [])
     
-    if len(features_data) < 30 or len(completed) < 30:
+    if len(completed) < 30:
         return None
     
     try:
-        # Match features with outcomes
         X = []
         y = []
         
@@ -422,7 +522,13 @@ def train_ml_model(memory):
                     trade_features.get('roc_20', 0),
                     trade_features.get('dist_ema20', 0),
                     trade_features.get('dist_ema50', 0),
-                    trade_features.get('atr_pct', 2)
+                    trade_features.get('atr_pct', 2),
+                    trade_features.get('sector_score', 0),
+                    trade_features.get('sector_phase_score', 0),
+                    trade_features.get('sector_win_rate', 0.5),
+                    trade_features.get('volume_trend', 1),
+                    trade_features.get('price_stability', 0.02),
+                    trade_features.get('market_hour', 10)
                 ])
                 y.append(1 if trade['outcome'] == 'WIN' else 0)
         
@@ -432,26 +538,40 @@ def train_ml_model(memory):
         X = np.array(X)
         y = np.array(y)
         
-        # Train gradient boosting classifier
-        model = GradientBoostingClassifier(
-            n_estimators=50,
-            max_depth=3,
-            learning_rate=0.1,
+        # Use Random Forest for interpretability
+        model = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=5,
+            min_samples_split=5,
             random_state=42
         )
         model.fit(X, y)
         
-        return model
+        # Get feature importance
+        feature_names = ['rsi', 'volatility', 'vol_ratio', 'price_position',
+                        'roc_5', 'roc_20', 'dist_ema20', 'dist_ema50', 'atr_pct',
+                        'sector_score', 'sector_phase_score', 'sector_win_rate',
+                        'volume_trend', 'price_stability', 'market_hour']
+        
+        importance = dict(zip(feature_names, model.feature_importances_))
+        top_features = sorted(importance.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        return {
+            "model": model,
+            "sample_size": len(X),
+            "top_features": top_features
+        }
     except Exception as e:
         print(f"ML training error: {e}")
         return None
 
-def predict_ml_probability(model, features):
-    """Predict win probability using trained model"""
-    if model is None or features is None:
-        return 50  # Default neutral
+def predict_win_probability(model_data, features):
+    """Predict win probability using enhanced model"""
+    if model_data is None or features is None:
+        return 50
     
     try:
+        model = model_data['model']
         X = np.array([[
             features.get('rsi', 50),
             features.get('volatility', 2),
@@ -461,7 +581,13 @@ def predict_ml_probability(model, features):
             features.get('roc_20', 0),
             features.get('dist_ema20', 0),
             features.get('dist_ema50', 0),
-            features.get('atr_pct', 2)
+            features.get('atr_pct', 2),
+            features.get('sector_score', 0),
+            features.get('sector_phase_score', 0),
+            features.get('sector_win_rate', 0.5),
+            features.get('volume_trend', 1),
+            features.get('price_stability', 0.02),
+            features.get('market_hour', 10)
         ]])
         
         prob = model.predict_proba(X)[0][1] * 100
@@ -470,270 +596,105 @@ def predict_ml_probability(model, features):
         return 50
 
 # ============================================================
-# 🔌 MODULE 4: BROKER INTEGRATION (Zerodha Kite)
+# 🎯 IMPROVEMENT #5: ADVANCED RISK MANAGEMENT
 # ============================================================
 
-def place_kite_order(symbol, quantity, price, order_type="LIMIT", transaction="BUY"):
-    """Place order via Zerodha Kite API"""
-    if not KITE_API_KEY or not KITE_ACCESS_TOKEN:
-        return {"success": False, "message": "Kite credentials not configured"}
+def calculate_kelly_size(win_rate, avg_win, avg_loss, capital, aggressive=False):
+    """Enhanced Kelly Criterion"""
+    try:
+        if avg_loss == 0 or win_rate == 0:
+            return capital * 0.01
+        
+        win_rate_dec = win_rate / 100
+        loss_rate = 1 - win_rate_dec
+        b = abs(avg_win / avg_loss) if avg_loss != 0 else 1
+        
+        kelly_fraction = (b * win_rate_dec - loss_rate) / b
+        
+        # Use quarter Kelly for conservative, half Kelly for aggressive
+        multiplier = 0.5 if aggressive else 0.25
+        kelly_fraction = max(0.005, min(0.03, kelly_fraction * multiplier))
+        
+        return capital * kelly_fraction
+    except:
+        return capital * 0.01
+
+def calculate_advanced_position_size(entry_price, atr, capital, regime, memory):
+    """Advanced position sizing with regime and volatility"""
+    try:
+        # Regime-based risk
+        regime_risk = {
+            "STRONG_BULL": 2.0,
+            "BULL": 1.5,
+            "SIDEWAYS": 0.75,
+            "BEAR": 0.5,
+            "STRONG_BEAR": 0.25
+        }
+        
+        risk_percent = regime_risk.get(regime, 1.0)
+        
+        # Volatility adjustment
+        volatility_pct = (atr / entry_price) * 100
+        if volatility_pct > 5:  # High volatility
+            risk_percent *= 0.7
+        elif volatility_pct < 1.5:  # Low volatility
+            risk_percent *= 1.2
+        
+        # Recent performance adjustment
+        total_trades = memory.get('total_wins', 0) + memory.get('total_losses', 0)
+        if total_trades >= 20:
+            recent_trades = memory.get('completed_trades', [])[-10:]
+            recent_wins = sum(1 for t in recent_trades if t.get('outcome') == 'WIN')
+            recent_wr = (recent_wins / len(recent_trades)) if recent_trades else 0.5
+            
+            # Boost if hot streak, reduce if cold streak
+            if recent_wr > 0.7:
+                risk_percent *= 1.2
+            elif recent_wr < 0.3:
+                risk_percent *= 0.6
+        
+        # Cap max risk
+        risk_percent = min(risk_percent, 2.5)
+        
+        # Calculate position
+        risk_amount = capital * (risk_percent / 100)
+        stop_distance = atr * 1.5
+        
+        if stop_distance <= 0:
+            return {"shares": 0, "value": 0, "risk": 0, "risk_pct": 0}
+        
+        shares = int(risk_amount / stop_distance)
+        position_value = shares * entry_price
+        actual_risk = shares * stop_distance
+        
+        # Max 15% per position
+        max_position = capital * 0.15
+        if position_value > max_position:
+            shares = int(max_position / entry_price)
+            position_value = shares * entry_price
+            actual_risk = shares * stop_distance
+        
+        return {
+            "shares": shares,
+            "value": round(position_value, 2),
+            "risk": round(actual_risk, 2),
+            "risk_pct": round((actual_risk / capital) * 100, 2)
+        }
+    except:
+        return {"shares": 0, "value": 0, "risk": 0, "risk_pct": 0}
+
+def check_portfolio_heat(memory, new_risk):
+    """Check total portfolio risk"""
+    active = memory.get('pending_evaluations', {})
+    current_risk = sum(p.get('risk_percent', 0) for p in active.values())
+    total_risk = current_risk + new_risk
     
-    try:
-        url = "https://api.kite.trade/orders/regular"
-        headers = {
-            "X-Kite-Version": "3",
-            "Authorization": f"token {KITE_API_KEY}:{KITE_ACCESS_TOKEN}",
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
-        
-        data = {
-            "tradingsymbol": symbol,
-            "exchange": "NSE",
-            "transaction_type": transaction,
-            "order_type": order_type,
-            "quantity": quantity,
-            "product": "CNC",  # Delivery
-            "validity": "DAY",
-            "price": price
-        }
-        
-        r = requests.post(url, headers=headers, data=data, timeout=15)
-        result = r.json()
-        
-        if result.get("status") == "success":
-            return {
-                "success": True,
-                "order_id": result["data"]["order_id"],
-                "message": f"Order placed: {transaction} {quantity} {symbol}"
-            }
-        else:
-            return {"success": False, "message": result.get("message", "Unknown error")}
-    except Exception as e:
-        return {"success": False, "message": str(e)}
-
-# ============================================================
-# 📱 MODULE 4B: INTERACTIVE TELEGRAM
-# ============================================================
-
-def send_telegram_with_buttons(msg, buttons=None):
-    """Send Telegram message with inline buttons"""
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        
-        # Split long messages
-        parts = [msg[i:i+3800] for i in range(0, len(msg), 3800)]
-        
-        for i, part in enumerate(parts):
-            payload = {
-                "chat_id": CHAT_ID,
-                "text": part
-            }
-            
-            # Add buttons only to last message
-            if i == len(parts) - 1 and buttons:
-                payload["reply_markup"] = json.dumps({"inline_keyboard": buttons})
-            
-            r = requests.post(url, json=payload, timeout=15)
-            time.sleep(0.8)
-        
-        return True
-    except Exception as e:
-        print(f"Telegram error: {e}")
-        return False
-
-def send_telegram(msg):
-    """Simple send without buttons"""
-    return send_telegram_with_buttons(msg)
-
-def create_pick_buttons(ticker):
-    """Create interactive buttons for a pick"""
-    return [
-        [
-            {"text": "✅ Win", "callback_data": f"win_{ticker}"},
-            {"text": "❌ Loss", "callback_data": f"loss_{ticker}"}
-        ],
-        [
-            {"text": "📊 Details", "callback_data": f"details_{ticker}"},
-            {"text": "🔄 Retest", "callback_data": f"retest_{ticker}"}
-        ]
-    ]
-
-def create_menu_buttons():
-    """Main menu buttons"""
-    return [
-        [
-            {"text": "📊 Memory Report", "callback_data": "memory_report"},
-            {"text": "📈 Performance", "callback_data": "performance"}
-        ],
-        [
-            {"text": "🎯 Active Positions", "callback_data": "positions"},
-            {"text": "🧠 Insights", "callback_data": "insights"}
-        ]
-    ]
-
-def check_telegram_updates(memory):
-    """Check for user callbacks/commands"""
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-        r = requests.get(url, timeout=10).json()
-        
-        for update in r.get('result', [])[-20:]:  # Last 20 updates
-            # Handle callback queries (button presses)
-            if 'callback_query' in update:
-                cb = update['callback_query']
-                data = cb['data']
-                
-                if data.startswith('win_'):
-                    ticker = data.replace('win_', '')
-                    handle_user_feedback(ticker, 'WIN', memory)
-                
-                elif data.startswith('loss_'):
-                    ticker = data.replace('loss_', '')
-                    handle_user_feedback(ticker, 'LOSS', memory)
-                
-                elif data == 'memory_report':
-                    send_memory_report(memory)
-                
-                elif data == 'performance':
-                    send_performance_report(memory)
-                
-                elif data == 'insights':
-                    send_insights_report(memory)
-                
-                # Answer callback to remove loading
-                requests.post(
-                    f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery",
-                    json={"callback_query_id": cb['id']},
-                    timeout=5
-                )
-            
-            # Handle text commands
-            elif 'message' in update and 'text' in update['message']:
-                text = update['message']['text'].strip().lower()
-                
-                if text == '/memory':
-                    send_memory_report(memory)
-                elif text == '/performance':
-                    send_performance_report(memory)
-                elif text == '/insights':
-                    send_insights_report(memory)
-                elif text == '/help':
-                    send_help_message()
-        
-        return memory
-    except Exception as e:
-        print(f"Callback check error: {e}")
-        return memory
-
-def handle_user_feedback(ticker, outcome, memory):
-    """Handle user feedback on picks"""
-    memory['user_feedback'][ticker] = {
-        "outcome": outcome,
-        "date": datetime.now().isoformat()
+    return {
+        "current_heat": round(current_risk, 2),
+        "total_heat": round(total_risk, 2),
+        "allowed": total_risk <= MAX_PORTFOLIO_HEAT,
+        "remaining_capacity": max(0, MAX_PORTFOLIO_HEAT - current_risk)
     }
-    
-    if outcome == 'WIN':
-        memory['total_wins'] += 1
-        confirmation = f"✅ Marked {ticker} as WIN"
-    else:
-        memory['total_losses'] += 1
-        confirmation = f"❌ Marked {ticker} as LOSS"
-    
-    send_telegram(confirmation)
-    save_memory(memory)
-
-def send_memory_report(memory):
-    """Send detailed memory report"""
-    total = memory['total_wins'] + memory['total_losses']
-    wr = (memory['total_wins'] / total * 100) if total > 0 else 0
-    
-    msg = "🧠 [ARTHA MEMORY REPORT]\n"
-    msg += "=" * 30 + "\n\n"
-    msg += f"📅 Bot Age: {(datetime.now() - datetime.fromisoformat(memory['created'])).days} days\n"
-    msg += f"🎯 Total Picks: {memory['total_picks']}\n"
-    msg += f"✅ Wins: {memory['total_wins']}\n"
-    msg += f"❌ Losses: {memory['total_losses']}\n"
-    msg += f"📊 Win Rate: {wr:.1f}%\n"
-    msg += f"⏳ Pending: {len(memory['pending_evaluations'])}\n\n"
-    
-    if memory.get('learning_insights'):
-        msg += "💡 KEY INSIGHTS:\n"
-        for insight in memory['learning_insights'][:5]:
-            msg += f"  {insight}\n"
-    
-    send_telegram(msg)
-
-def send_performance_report(memory):
-    """Send performance breakdown"""
-    msg = "📈 [PERFORMANCE BREAKDOWN]\n"
-    msg += "=" * 30 + "\n\n"
-    
-    if memory.get('sector_performance'):
-        msg += "🏆 SECTOR PERFORMANCE:\n"
-        sectors = sorted(
-            memory['sector_performance'].items(),
-            key=lambda x: x[1].get('win_rate', 0),
-            reverse=True
-        )
-        for sec, data in sectors[:8]:
-            if data.get('count', 0) >= 2:
-                msg += f"  {sec}: {data.get('win_rate', 0)}% WR ({data['count']} trades)\n"
-    
-    send_telegram(msg)
-
-def send_insights_report(memory):
-    """Send all learned insights"""
-    msg = "🧠 [ALL LEARNED INSIGHTS]\n"
-    msg += "=" * 30 + "\n\n"
-    
-    insights = memory.get('learning_insights', [])
-    if insights:
-        for i, insight in enumerate(insights, 1):
-            msg += f"{i}. {insight}\n"
-    else:
-        msg += "Still learning... Need more trades.\n"
-    
-    send_telegram(msg)
-
-def send_help_message():
-    """Send help menu"""
-    msg = "⚡ [ARTHA COMMANDS]\n"
-    msg += "=" * 30 + "\n\n"
-    msg += "📱 TELEGRAM COMMANDS:\n"
-    msg += "/memory - Full memory report\n"
-    msg += "/performance - Sector performance\n"
-    msg += "/insights - All learned insights\n"
-    msg += "/help - This menu\n\n"
-    msg += "🎯 INLINE BUTTONS:\n"
-    msg += "✅ Win - Mark trade as winner\n"
-    msg += "❌ Loss - Mark trade as loser\n"
-    msg += "📊 Details - Get more info\n"
-    msg += "🔄 Retest - Re-analyze stock\n"
-    send_telegram(msg)
-
-# ============================================================
-# 🧮 CORE TECHNICAL FUNCTIONS
-# ============================================================
-
-def get_ema(s, n): return s.ewm(span=n, adjust=False).mean()
-def get_rsi(s, n=14):
-    delta = s.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(n).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(n).mean()
-    rs = gain / loss
-    return 100 - (100 / (1 + rs))
-
-def get_macd(s):
-    ema12 = get_ema(s, 12)
-    ema26 = get_ema(s, 26)
-    return ema12 - ema26, (ema12 - ema26).ewm(span=9, adjust=False).mean()
-
-def get_atr(high, low, close, n=14):
-    tr1 = high - low
-    tr2 = abs(high - close.shift())
-    tr3 = abs(low - close.shift())
-    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-    return tr.rolling(n).mean()
 
 # ============================================================
 # 🌍 MARKET REGIME
@@ -749,14 +710,37 @@ def detect_market_regime():
         curr = close.iloc[-1]
         change_20d = ((curr - close.iloc[-20]) / close.iloc[-20]) * 100
         
-        if curr > ema20 > ema50 > ema200 and change_20d > 3:
-            return {"regime": "STRONG_BULL", "trade_allowed": True, "change_20d": round(change_20d, 2), "price": round(curr, 2)}
+        # Additional metrics
+        rsi = get_rsi(close, 14).iloc[-1]
+        volatility = close.pct_change().rolling(20).std().iloc[-1] * 100
+        
+        if curr > ema20 > ema50 > ema200 and change_20d > 3 and rsi > 60:
+            regime = "STRONG_BULL"
+            trade_allowed = True
         elif curr > ema20 > ema50 and change_20d > 0:
-            return {"regime": "BULL", "trade_allowed": True, "change_20d": round(change_20d, 2), "price": round(curr, 2)}
+            regime = "BULL"
+            trade_allowed = True
+        elif curr < ema50 and change_20d < -3:
+            regime = "STRONG_BEAR"
+            trade_allowed = False
         elif curr < ema50:
-            return {"regime": "BEAR", "trade_allowed": False, "change_20d": round(change_20d, 2), "price": round(curr, 2)}
+            regime = "BEAR"
+            trade_allowed = False
+        elif volatility > 2:
+            regime = "VOLATILE"
+            trade_allowed = False
         else:
-            return {"regime": "SIDEWAYS", "trade_allowed": False, "change_20d": round(change_20d, 2), "price": round(curr, 2)}
+            regime = "SIDEWAYS"
+            trade_allowed = False
+        
+        return {
+            "regime": regime,
+            "trade_allowed": trade_allowed,
+            "change_20d": round(change_20d, 2),
+            "price": round(curr, 2),
+            "rsi": round(rsi, 1),
+            "volatility": round(volatility, 2)
+        }
     except:
         return {"regime": "UNKNOWN", "trade_allowed": False, "change_20d": 0, "price": 0}
 
@@ -782,6 +766,47 @@ def detect_sector(ticker):
     return "Other"
 
 # ============================================================
+# 📰 SENTIMENT ANALYSIS (Simplified)
+# ============================================================
+
+POSITIVE_WORDS = ['growth', 'profit', 'surge', 'gain', 'strong', 'bullish', 'beat', 'record', 'upgrade', 'buy']
+NEGATIVE_WORDS = ['loss', 'fall', 'decline', 'weak', 'bearish', 'miss', 'downgrade', 'sell', 'concern', 'risk']
+
+def get_sentiment(ticker_name):
+    try:
+        query = quote(f"{ticker_name} stock")
+        url = f"https://news.google.com/rss/search?q={query}&hl=en-IN&gl=IN&ceid=IN:en"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(r.content, 'xml')
+        items = soup.find_all('item')[:10]
+        
+        if not items:
+            return {"sentiment": "NEUTRAL", "score": 0}
+        
+        total_score = 0
+        count = 0
+        for item in items:
+            title = item.find('title').text.lower() if item.find('title') else ""
+            if ticker_name.lower() in title:
+                pos = sum(1 for w in POSITIVE_WORDS if w in title)
+                neg = sum(1 for w in NEGATIVE_WORDS if w in title)
+                total_score += (pos - neg)
+                count += 1
+        
+        if count == 0:
+            return {"sentiment": "NEUTRAL", "score": 0}
+        
+        avg = total_score / count
+        if avg >= 1: sentiment = "BULLISH"
+        elif avg <= -1: sentiment = "BEARISH"
+        else: sentiment = "NEUTRAL"
+        
+        return {"sentiment": sentiment, "score": round(avg, 2), "count": count}
+    except:
+        return {"sentiment": "NEUTRAL", "score": 0}
+
+# ============================================================
 # 📥 GET STOCKS
 # ============================================================
 
@@ -801,10 +826,42 @@ def get_all_tickers():
             return ["RELIANCE.NS","TCS.NS","INFY.NS"]
 
 # ============================================================
-# 🎯 ULTRA-SMART SCANNER (v10.0)
+# 📤 TELEGRAM
 # ============================================================
 
-def ultra_smart_scan(ticker, nifty_close, memory, ml_model, fii_flow):
+def send_telegram(msg, buttons=None):
+    try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        parts = [msg[i:i+3800] for i in range(0, len(msg), 3800)]
+        
+        for i, part in enumerate(parts):
+            payload = {"chat_id": CHAT_ID, "text": part}
+            if i == len(parts) - 1 and buttons:
+                payload["reply_markup"] = json.dumps({"inline_keyboard": buttons})
+            
+            requests.post(url, json=payload, timeout=15)
+            time.sleep(0.8)
+    except Exception as e:
+        print(f"Telegram error: {e}")
+
+def create_pick_buttons(ticker):
+    return [[
+        {"text": "✅ Win", "callback_data": f"win_{ticker}"},
+        {"text": "❌ Loss", "callback_data": f"loss_{ticker}"}
+    ]]
+
+def create_menu_buttons():
+    return [
+        [{"text": "📊 Memory", "callback_data": "memory_report"}],
+        [{"text": "📈 Performance", "callback_data": "performance"}],
+        [{"text": "🎯 Sector Analysis", "callback_data": "sectors"}]
+    ]
+
+# ============================================================
+# 🎯 ULTIMATE SCANNER (v11.0)
+# ============================================================
+
+def ultimate_scan(ticker, nifty_close, memory, ml_model_data, sector_data, regime):
     try:
         df = yf.download(ticker, period="6mo", progress=False, timeout=10)
         if len(df) < 100: return None
@@ -816,7 +873,7 @@ def ultra_smart_scan(ticker, nifty_close, memory, ml_model, fii_flow):
         
         if close.iloc[-1] < 30 or vol.mean() < 50000: return None
         
-        # Technical indicators
+        # Indicators
         ema20 = get_ema(close, 20)
         ema50 = get_ema(close, 50)
         ema200 = get_ema(close, 200)
@@ -833,7 +890,7 @@ def ultra_smart_scan(ticker, nifty_close, memory, ml_model, fii_flow):
         if not (55 <= rsi.iloc[c] <= 70): return None
         if not (macd.iloc[c] > msig.iloc[c] and macd.iloc[c] > 0): return None
         
-        # Entry type detection
+        # Entry type
         high_20 = high.iloc[-25:-5].max()
         recent_5d_high = high.iloc[-5:].max()
         is_early_breakout = recent_5d_high > high_20
@@ -850,98 +907,78 @@ def ultra_smart_scan(ticker, nifty_close, memory, ml_model, fii_flow):
         avg_vol = vol.rolling(20).mean().iloc[c]
         vol_ratio = vol.iloc[c] / avg_vol if avg_vol > 0 else 0
         
-        # BASE SCORING
+        # Sector info
+        ticker_clean = ticker.replace(".NS", "")
+        sector = detect_sector(ticker_clean)
+        
+        # SCORING (max 200 points now)
         score = 0
         signals = []
         
-        # Trend
+        # 1. Trend (20 pts)
         score += 20 * memory["weights"]["trend"]
         signals.append("Trend OK")
         
-        # Volume
+        # 2. Volume (15 pts)
         if vol_ratio >= 3:
-            score += 15 * memory["weights"]["volume"]
-            signals.append("High Vol")
+            score += 15
+            signals.append("High Volume")
         elif vol_ratio >= 2:
-            score += 10 * memory["weights"]["volume"]
+            score += 10
+        elif vol_ratio >= 1.5:
+            score += 5
         
-        # RSI
+        # 3. RSI (15 pts)
         if 60 <= rsi.iloc[c] <= 65:
-            score += 15 * memory["weights"]["rsi"]
+            score += 15
             signals.append("Optimal RSI")
         elif 55 <= rsi.iloc[c] <= 70:
-            score += 10 * memory["weights"]["rsi"]
+            score += 10
         
-        # Entry type
+        # 4. Entry type (20 pts)
         if is_early_breakout:
             score += 20 * memory["weights"]["early_breakout"]
         if is_pullback:
             score += 20 * memory["weights"]["pullback"]
         
-        # Sector performance (from memory)
-        ticker_clean = ticker.replace(".NS", "")
-        sector = detect_sector(ticker_clean)
-        if sector in memory["sector_performance"]:
+        # 5. SECTOR ROTATION (25 pts) - NEW
+        sector_bonus = get_sector_bonus(sector, sector_data)
+        score += sector_bonus['bonus'] * memory["weights"]["sector_rotation"]
+        if sector_bonus['bonus'] > 0:
+            signals.append(sector_bonus['label'])
+        elif sector_bonus['bonus'] < 0:
+            return None  # Skip cold sectors
+        
+        # 6. Historical sector (10 pts)
+        if sector in memory.get("sector_performance", {}):
             sec_data = memory["sector_performance"][sector]
             if sec_data.get('count', 0) >= 3:
                 if sec_data.get('win_rate', 0) >= 65:
                     score += 10
-                    signals.append(f"Hot Sector")
+                    signals.append(f"Sector WR: {sec_data['win_rate']}%")
                 elif sec_data.get('win_rate', 0) <= 35:
-                    return None  # Skip weak sectors
+                    return None
         
-        # MODULE 1: SENTIMENT ANALYSIS
-        sentiment_data = get_google_news_sentiment(ticker_clean)
-        if sentiment_data['count'] > 0:
-            if sentiment_data['sentiment'] == "VERY_BULLISH":
-                score += 15 * memory["weights"]["sentiment"]
-                signals.append("Very Bullish News")
-            elif sentiment_data['sentiment'] == "BULLISH":
-                score += 8 * memory["weights"]["sentiment"]
-                signals.append("Positive News")
-            elif sentiment_data['sentiment'] == "VERY_BEARISH":
-                return None  # Skip stocks with very bearish news
-            elif sentiment_data['sentiment'] == "BEARISH":
-                score -= 15
-                signals.append("Bearish News")
-        
-        # MODULE 1B: INSTITUTIONAL ACTIVITY
-        bulk_data = check_bulk_deals(ticker_clean)
-        if bulk_data['score'] > 0:
-            score += bulk_data['score'] * memory["weights"]["institutional"]
-            signals.append("Inst. Buying")
-        elif bulk_data['score'] < 0:
-            return None  # Skip stocks with institutional selling
-        
-        # FII/DII flow bonus
-        if fii_flow['score'] > 0:
-            score += 5
-        elif fii_flow['score'] < 0:
-            score -= 5
-        
-        # MODULE 3: ML PREDICTION
-        ml_features = extract_ml_features(df, ticker_clean)
-        ml_probability = 50
-        
-        if ml_model and ml_features:
-            ml_probability = predict_ml_probability(ml_model, ml_features)
-            
-            # Skip if ML predicts low win probability
-            if ml_probability < 45:
-                return None
-            
-            # Boost score based on ML confidence
-            if ml_probability >= 70:
+        # 7. BACKTEST SCORE (20 pts) - NEW
+        backtest = get_backtest_score(ticker_clean, memory)
+        if backtest:
+            if backtest['win_rate'] >= 60:
                 score += 20
-                signals.append(f"ML: {ml_probability}%")
-            elif ml_probability >= 60:
+                signals.append(f"Backtest WR: {backtest['win_rate']}%")
+            elif backtest['win_rate'] >= 50:
                 score += 10
-                signals.append(f"ML: {ml_probability}%")
+            elif backtest['win_rate'] < 40:
+                return None  # Skip poor historical performers
         
-        # Only accept high scores
-        if score < 75: return None
+        # 8. Sentiment (15 pts)
+        sentiment = get_sentiment(ticker_clean)
+        if sentiment['sentiment'] == "BULLISH":
+            score += 15
+            signals.append("Bullish News")
+        elif sentiment['sentiment'] == "BEARISH":
+            return None
         
-        # RS Rating
+        # 9. RS Rating (10 pts)
         rs = 100
         if nifty_close is not None and len(nifty_close) > 63:
             stock_perf = close.iloc[-1] / close.iloc[-63]
@@ -951,23 +988,35 @@ def ultra_smart_scan(ticker, nifty_close, memory, ml_model, fii_flow):
                 score += 10
                 signals.append(f"Strong RS")
         
-        # MODULE 2: POSITION SIZING
-        # Kelly Criterion (if enough data)
-        total_evaluated = memory['total_wins'] + memory['total_losses']
-        if total_evaluated >= 20:
-            win_rate = (memory['total_wins'] / total_evaluated) * 100
-            avg_win = 5  # Approximate avg win %
-            avg_loss = 3  # Approximate avg loss %
-            kelly_size = calculate_kelly_position_size(win_rate, avg_win, avg_loss, TOTAL_CAPITAL)
-        else:
-            kelly_size = TOTAL_CAPITAL * 0.02
+        # 10. ML PREDICTION (30 pts) - Enhanced
+        ml_features = extract_enhanced_features(df, sector_data, sector, memory)
+        ml_probability = 50
         
-        # ATR-based sizing
-        atr_sizing = calculate_atr_position_size(curr, atr_val, TOTAL_CAPITAL, 1.5)
+        if ml_model_data and ml_features:
+            ml_probability = predict_win_probability(ml_model_data, ml_features)
+            
+            if ml_probability < 45:
+                return None
+            
+            if ml_probability >= 75:
+                score += 30
+                signals.append(f"ML: {ml_probability}%")
+            elif ml_probability >= 65:
+                score += 20
+                signals.append(f"ML: {ml_probability}%")
+            elif ml_probability >= 55:
+                score += 10
         
-        # Use smaller of the two (conservative)
-        recommended_value = min(kelly_size, atr_sizing['value'])
-        recommended_shares = int(recommended_value / curr) if curr > 0 else 0
+        # Only accept high scores
+        if score < 90: return None
+        
+        # ADVANCED POSITION SIZING - NEW
+        position_data = calculate_advanced_position_size(curr, atr_val, TOTAL_CAPITAL, regime['regime'], memory)
+        
+        # PORTFOLIO HEAT CHECK - NEW
+        heat_check = check_portfolio_heat(memory, position_data['risk_pct'])
+        if not heat_check['allowed']:
+            return None  # Skip if portfolio too hot
         
         # Targets
         recent_low = low.iloc[-5:].min()
@@ -980,6 +1029,7 @@ def ultra_smart_scan(ticker, nifty_close, memory, ml_model, fii_flow):
         
         tgt1 = curr + (risk * 1.5)
         tgt2 = curr + (risk * 2.5)
+        tgt3 = curr + (risk * 4)  # New: Extended target
         
         return {
             "ticker": ticker_clean,
@@ -989,19 +1039,22 @@ def ultra_smart_scan(ticker, nifty_close, memory, ml_model, fii_flow):
             "vol_ratio": round(vol_ratio, 1),
             "entry_type": entry_type,
             "sector": sector,
+            "sector_phase": sector_data.get('all_scores', {}).get(sector, {}).get('phase', 'N/A'),
             "sl": round(sl, 2),
             "tgt1": round(tgt1, 2),
             "tgt2": round(tgt2, 2),
+            "tgt3": round(tgt3, 2),
             "risk_pct": round(risk_pct, 2),
             "rr_ratio": round((tgt1 - curr) / risk, 2),
             "rs_rating": round(rs, 0),
             "atr": round(atr_val, 2),
-            "recommended_shares": recommended_shares,
-            "recommended_value": round(recommended_value, 0),
-            "sentiment": sentiment_data['sentiment'],
-            "sentiment_score": sentiment_data['score'],
-            "institutional": bulk_data['activity'],
+            "recommended_shares": position_data['shares'],
+            "recommended_value": position_data['value'],
+            "sentiment": sentiment['sentiment'],
             "ml_probability": ml_probability,
+            "backtest_wr": backtest['win_rate'] if backtest else None,
+            "backtest_trades": backtest['total_trades'] if backtest else 0,
+            "portfolio_heat": heat_check['total_heat'],
             "features": ml_features,
             "signals": signals[:6]
         }
@@ -1009,7 +1062,7 @@ def ultra_smart_scan(ticker, nifty_close, memory, ml_model, fii_flow):
         return None
 
 # ============================================================
-# 🎓 EVALUATE PAST PICKS & LEARN
+# 🎓 EVALUATE PICKS
 # ============================================================
 
 def evaluate_past_picks(memory):
@@ -1043,9 +1096,9 @@ def evaluate_past_picks(memory):
                 outcome = "LOSS"
                 actual_return = ((sl_price - entry_price) / entry_price) * 100
             else:
-                pct_return = ((current_price - entry_price) / entry_price) * 100
-                outcome = "WIN" if pct_return > 2 else "LOSS" if pct_return < -1 else "NEUTRAL"
-                actual_return = pct_return
+                pct = ((current_price - entry_price) / entry_price) * 100
+                outcome = "WIN" if pct > 2 else "LOSS" if pct < -1 else "NEUTRAL"
+                actual_return = pct
             
             completed = {
                 "ticker": pick['ticker'],
@@ -1083,7 +1136,6 @@ def learn_from_trades(memory):
     trades = memory["completed_trades"]
     if len(trades) < 10: return memory
     
-    # Sector analysis
     sector_stats = {}
     for t in trades:
         sec = t.get('sector', 'Unknown')
@@ -1099,7 +1151,6 @@ def learn_from_trades(memory):
     
     memory["sector_performance"] = sector_stats
     
-    # Insights
     insights = []
     if sector_stats:
         best = max(sector_stats.items(), key=lambda x: x[1].get('win_rate', 0) if x[1]['count'] >= 3 else 0)
@@ -1114,7 +1165,7 @@ def learn_from_trades(memory):
     return memory
 
 # ============================================================
-# 🚀 MAIN ORCHESTRATOR
+# 🚀 MAIN
 # ============================================================
 
 def main():
@@ -1123,26 +1174,26 @@ def main():
     print(datetime.now().strftime("%d %b %Y %I:%M %p"))
     print("=" * 60)
     
-    # Load memory
     memory = load_memory()
     print(f"\n[MEMORY] {memory['total_picks']} picks | {memory['total_wins']}W/{memory['total_losses']}L")
     
-    # Check for user callbacks
-    memory = check_telegram_updates(memory)
-    
-    # Send starting message
-    send_telegram(f"⚡ ARTHA {BOT_VERSION} starting comprehensive scan...")
+    send_telegram(f"⚡ ARTHA {BOT_VERSION} starting ultimate scan...")
     
     # Evaluate past picks
+    print("\n[EVAL] Evaluating past picks...")
     memory, new_completed = evaluate_past_picks(memory)
     memory = learn_from_trades(memory)
     
-    # Train ML model
-    print("\n[ML] Training model...")
-    ml_model = train_ml_model(memory) if ML_AVAILABLE else None
-    if ml_model:
-        print("  ML model trained successfully")
-        memory['ml_model_trained'] = True
+    # Check confirmations - NEW
+    print("\n[CONFIRM] Checking confirmations...")
+    memory, confirmed_picks = check_confirmations(memory)
+    print(f"  Confirmed: {len(confirmed_picks)} picks")
+    
+    # Train ML - Enhanced
+    print("\n[ML] Training enhanced model...")
+    ml_model_data = train_enhanced_ml(memory) if ML_AVAILABLE else None
+    if ml_model_data:
+        print(f"  ML trained on {ml_model_data['sample_size']} samples")
     
     # Market regime
     regime = detect_market_regime()
@@ -1153,14 +1204,14 @@ def main():
         msg += f"📅 {datetime.now().strftime('%A, %d %b %Y')}\n\n"
         msg += "[⚠️ NO TRADES TODAY]\n"
         msg += f"Regime: {regime['regime']}\n"
-        msg += f"Nifty: {regime['price']} ({regime['change_20d']:+.2f}% 20D)\n\n"
+        msg += f"Nifty: {regime['price']} ({regime['change_20d']:+.2f}% 20D)\n"
+        msg += f"Volatility: {regime.get('volatility', 0):.2f}%\n\n"
         msg += "🧠 MEMORY STATUS:\n"
-        msg += f"Tracked: {memory['total_picks']} picks\n"
         wr = (memory['total_wins']/(memory['total_wins']+memory['total_losses'])*100) if (memory['total_wins']+memory['total_losses'])>0 else 0
-        msg += f"WR: {wr:.1f}%\n\n"
+        msg += f"WR: {wr:.1f}%\n"
         
         save_memory(memory)
-        send_telegram_with_buttons(msg, create_menu_buttons())
+        send_telegram(msg, create_menu_buttons())
         return
     
     # Get benchmark
@@ -1170,65 +1221,53 @@ def main():
     except:
         nifty_close = None
     
-    # Get FII flow
-    fii_flow = check_fii_dii_flow()
-    print(f"[FII] {fii_flow['flow']}")
+    # SECTOR ROTATION ANALYSIS - NEW
+    print("\n[SECTOR] Analyzing sector rotation...")
+    sector_data = analyze_sector_rotation()
+    print(f"  Hot: {sector_data['hot_sectors']}")
+    print(f"  Cold: {sector_data['cold_sectors']}")
     
     # Scan stocks
-    print("\n[SCANNING] Ultra-smart scan in progress...")
+    print("\n[SCAN] Ultimate scanning...")
     tickers = get_all_tickers()
     results = []
     
     for i, t in enumerate(tickers):
         if (i+1) % 300 == 0:
             print(f"  {i+1}/{len(tickers)} | Found: {len(results)}")
-        r = ultra_smart_scan(t, nifty_close, memory, ml_model, fii_flow)
+        r = ultimate_scan(t, nifty_close, memory, ml_model_data, sector_data, regime)
         if r: results.append(r)
     
     results.sort(key=lambda x: x["score"], reverse=True)
     
-    # Apply correlation guard
-    final_picks = []
-    for pick in results:
-        guard = check_correlation_guard(pick, final_picks, memory)
-        if guard['allowed']:
-            final_picks.append(pick)
-        if len(final_picks) >= 3: break
+    # ADD TO CONFIRMATION QUEUE (Instead of immediate picks) - NEW
+    for pick in results[:5]:
+        memory = add_to_confirmation_queue(
+            memory, pick['ticker'], pick['price'],
+            pick['sl'], pick['tgt1'], pick['tgt2'],
+            pick['score'], pick['sector'], pick['entry_type']
+        )
     
-    print(f"\n[FINAL] {len(final_picks)} picks after correlation guard")
-    
-    # Save picks to memory
-    for pick in final_picks:
-        pick_id = f"{pick['ticker']}_{datetime.now().strftime('%Y%m%d')}"
+    # Save confirmed picks to pending evaluations
+    for cp in confirmed_picks:
+        pick_id = f"{cp['ticker']}_{datetime.now().strftime('%Y%m%d')}"
         memory["pending_evaluations"][pick_id] = {
-            "ticker": pick['ticker'],
+            "ticker": cp['ticker'],
             "date": datetime.now().isoformat(),
-            "entry_price": pick['price'],
-            "sl": pick['sl'],
-            "tgt1": pick['tgt1'],
-            "tgt2": pick['tgt2'],
-            "score": pick['score'],
-            "sector": pick['sector'],
-            "entry_type": pick['entry_type'],
-            "rsi": pick['rsi']
+            "entry_price": cp['confirmed_price'],
+            "sl": cp['detected_sl'],
+            "tgt1": cp['detected_tgt1'],
+            "tgt2": cp['detected_tgt2'],
+            "score": cp['score'],
+            "sector": cp['sector'],
+            "entry_type": cp['entry_type'],
+            "rsi": 0
         }
         memory["total_picks"] += 1
-        
-        # Save features for ML
-        if pick.get('features'):
-            memory["ml_features"].append({
-                "ticker": pick['ticker'],
-                "date": datetime.now().isoformat(),
-                "features": pick['features']
-            })
-    
-    # Keep last 500 features
-    if len(memory["ml_features"]) > 500:
-        memory["ml_features"] = memory["ml_features"][-500:]
     
     save_memory(memory)
     
-    # Build report
+    # Build comprehensive report
     today = datetime.now().strftime("%A, %d %b %Y")
     msg = "=" * 40 + "\n"
     msg += f"⚡ ARTHA {BOT_VERSION}\n"
@@ -1240,77 +1279,92 @@ def main():
     total_eval = memory['total_wins'] + memory['total_losses']
     wr = (memory['total_wins'] / total_eval * 100) if total_eval > 0 else 0
     
-    msg += "🧠 [BRAIN STATUS]\n"
+    msg += "🧠 [BRAIN STATUS v11.0]\n"
     msg += f"Picks: {memory['total_picks']} | WR: {wr:.1f}%\n"
-    msg += f"ML Model: {'✅ Active' if ml_model else '⏳ Learning'}\n"
-    msg += f"Sentiment: ✅ Active\n"
-    msg += f"Risk Mgmt: ✅ Active\n\n"
+    msg += f"ML Model: {'✅ Active' if ml_model_data else '⏳ Learning'}\n"
+    if ml_model_data:
+        msg += f"ML Sample: {ml_model_data['sample_size']}\n"
+        top_feats = ml_model_data.get('top_features', [])
+        if top_feats:
+            msg += f"Top Feature: {top_feats[0][0]}\n"
+    msg += "\n"
     
     # Market
-    msg += f"[🌍 MARKET]\n"
+    msg += f"[🌍 MARKET REGIME]\n"
     msg += f"Regime: {regime['regime']}\n"
-    msg += f"Nifty: {regime['price']}\n"
-    msg += f"FII Flow: {fii_flow['flow']}\n\n"
+    msg += f"Nifty: {regime['price']} ({regime['change_20d']:+.2f}%)\n"
+    msg += f"Volatility: {regime.get('volatility', 0):.2f}%\n\n"
     
-    # Picks
-    if final_picks:
+    # Sector Rotation - NEW
+    msg += f"[🔥 SECTOR ROTATION]\n"
+    msg += f"Hot: {', '.join(sector_data['hot_sectors'])}\n"
+    msg += f"Warm: {', '.join(sector_data['warm_sectors'])}\n"
+    msg += f"Cold: {', '.join(sector_data['cold_sectors'])}\n\n"
+    
+    # Confirmed picks (from previous scans)
+    if confirmed_picks:
         msg += "=" * 40 + "\n"
-        msg += "[🎯 TOP 3 SMART PICKS]\n"
+        msg += "[✅ CONFIRMED PICKS (Ready to Trade)]\n"
         msg += "=" * 40 + "\n\n"
         
-        for i, s in enumerate(final_picks):
-            grade = "A+" if s['score'] >= 100 else "A" if s['score'] >= 85 else "B+"
-            msg += f"#{i+1} {s['ticker']} | {grade} ({s['score']}/120)\n"
-            msg += f"🏢 {s['sector']} | {s['entry_type']}\n\n"
+        for i, s in enumerate(confirmed_picks[:3]):
+            grade = "A+" if s['score'] >= 150 else "A" if s['score'] >= 120 else "B+"
+            msg += f"#{i+1} {s['ticker']} | {grade} ({s['score']}/200)\n"
+            msg += f"Sector: {s['sector']} | {s['entry_type']}\n"
+            msg += f"Confirmations: {s.get('confirmations_passed', 2)}/3 ✅\n\n"
             
-            msg += "📊 TECHNICAL:\n"
-            msg += f"  Price: Rs.{s['price']} | RSI: {s['rsi']}\n"
-            msg += f"  Volume: {s['vol_ratio']}x | RS: {s['rs_rating']}\n"
-            msg += f"  ATR: Rs.{s['atr']}\n\n"
-            
-            msg += "🧠 AI ANALYSIS:\n"
-            msg += f"  ML Win Prob: {s['ml_probability']}%\n"
-            msg += f"  News: {s['sentiment']}\n"
-            msg += f"  Institutional: {s['institutional']}\n\n"
-            
-            msg += "💰 SMART SIZING:\n"
-            msg += f"  Shares: {s['recommended_shares']}\n"
-            msg += f"  Value: Rs.{s['recommended_value']:,}\n"
-            msg += f"  Risk: {s['risk_pct']}%\n\n"
-            
-            msg += "🎯 TRADE SETUP:\n"
-            msg += f"  Entry: Rs.{s['price']}\n"
-            msg += f"  SL: Rs.{s['sl']}\n"
-            msg += f"  T1: Rs.{s['tgt1']} | T2: Rs.{s['tgt2']}\n"
-            msg += f"  R:R = 1:{s['rr_ratio']}\n\n"
-            
+            msg += "💰 TRADE READY:\n"
+            msg += f"  Entry: Rs.{s['confirmed_price']}\n"
+            msg += f"  SL: Rs.{s['detected_sl']}\n"
+            msg += f"  T1: Rs.{s['detected_tgt1']} | T2: Rs.{s['detected_tgt2']}\n\n"
+            msg += "-" * 40 + "\n\n"
+    
+    # New picks in confirmation queue
+    if results:
+        msg += "=" * 40 + "\n"
+        msg += "[⏳ NEW PICKS (In 2-Day Confirmation)]\n"
+        msg += "=" * 40 + "\n\n"
+        msg += "These are being validated for 2 days\n"
+        msg += "Will appear as CONFIRMED if they hold\n\n"
+        
+        for i, s in enumerate(results[:5]):
+            grade = "A+" if s['score'] >= 150 else "A" if s['score'] >= 120 else "B+"
+            msg += f"#{i+1} {s['ticker']} | {grade} ({s['score']}/200)\n"
+            msg += f"🏢 {s['sector']} ({s['sector_phase']})\n"
+            msg += f"📊 RSI: {s['rsi']} | Vol: {s['vol_ratio']}x\n"
+            msg += f"🧠 ML: {s['ml_probability']}%\n"
+            if s['backtest_wr']:
+                msg += f"📈 Backtest WR: {s['backtest_wr']}% ({s['backtest_trades']} trades)\n"
+            msg += f"💰 Price: Rs.{s['price']}\n"
+            msg += f"📉 Sentiment: {s['sentiment']}\n"
+            msg += f"💼 Position: {s['recommended_shares']} shares (Rs.{s['recommended_value']:,})\n"
+            msg += f"🔥 Portfolio Heat: {s['portfolio_heat']}%\n"
             if s['signals']:
                 msg += f"✨ {', '.join(s['signals'])}\n"
             msg += "-" * 40 + "\n\n"
     else:
         msg += "[❌ NO PICKS TODAY]\n"
-        msg += "No stocks passed all v10.0 filters:\n"
-        msg += "• Technical setup\n"
-        msg += "• Sentiment check\n"
-        msg += "• Institutional activity\n"
-        msg += "• ML prediction\n"
-        msg += "• Risk management\n\n"
+        msg += "All stocks filtered by strict v11.0 criteria\n\n"
     
-    msg += "💡 Tap buttons below to interact!\n\n"
+    # Portfolio status
+    heat_check = check_portfolio_heat(memory, 0)
+    msg += f"[🎯 PORTFOLIO STATUS]\n"
+    msg += f"Current Heat: {heat_check['current_heat']}%\n"
+    msg += f"Max Allowed: {MAX_PORTFOLIO_HEAT}%\n"
+    msg += f"Remaining: {heat_check['remaining_capacity']}%\n\n"
+    
     msg += "=" * 40 + "\n"
     msg += f"{BOT_NAME} {BOT_VERSION}"
     
-    # Send with interactive buttons
-    if final_picks:
-        buttons = []
-        for pick in final_picks:
+    # Send with buttons
+    buttons = []
+    if confirmed_picks:
+        for pick in confirmed_picks[:3]:
             buttons.extend(create_pick_buttons(pick['ticker']))
-        buttons.extend(create_menu_buttons())
-        send_telegram_with_buttons(msg, buttons)
-    else:
-        send_telegram_with_buttons(msg, create_menu_buttons())
+    buttons.extend(create_menu_buttons())
     
-    print("\n[DONE] v10.0 scan complete!")
+    send_telegram(msg, buttons)
+    print("\n[DONE] v11.0 scan complete!")
 
 if __name__ == "__main__":
     main()
