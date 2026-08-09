@@ -1,7 +1,7 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-08-08T17:19:03.966538",
+  "last_updated": "2026-08-09T17:56:35.087519",
   "total_picks": 2,
   "total_wins": 0,
   "total_losses": 0,
@@ -83,5 +83,9 @@
     "institutional": 1.0
   },
   "ml_model_trained": false,
-  "last_ml_train": null
+  "last_ml_train": null,
+  "backtest_results": {},
+  "sector_history": {},
+  "confirmation_queue": {},
+  "sector_rotation_data": {}
 }
