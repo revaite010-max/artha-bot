@@ -1,8 +1,8 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-08-20T02:37:46.383056",
-  "total_picks": 2,
+  "last_updated": "2026-08-20T14:25:21.504800",
+  "total_picks": 5,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -29,6 +29,33 @@
       "sector": "Other",
       "entry_type": "PULLBACK",
       "rsi": 62.0
+    },
+    "TRENT_20260820": {
+      "ticker": "TRENT",
+      "date": "2026-08-20T14:25:21.504783",
+      "entry_price": 2970.0,
+      "sl": 2869.25,
+      "tgt1": 3151.35,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "ADANIPORTS_20260820": {
+      "ticker": "ADANIPORTS",
+      "date": "2026-08-20T14:25:21.504793",
+      "entry_price": 1696.0,
+      "sl": 1650.33,
+      "tgt1": 1778.21,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "CIPLA_20260820": {
+      "ticker": "CIPLA",
+      "date": "2026-08-20T14:25:21.504797",
+      "entry_price": 1438.0,
+      "sl": 1401.25,
+      "tgt1": 1504.15,
+      "strategy": "DIP_BUYING",
+      "score": 75
     }
   },
   "completed_trades": [],
@@ -92,5 +119,6 @@
   "winning_patterns": {},
   "yesterday_gainers": {},
   "watchlist": {},
-  "vcp_watchlist": {}
+  "vcp_watchlist": {},
+  "mode_stats": {}
 }
