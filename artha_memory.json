@@ -1,8 +1,8 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-08-20T14:25:21.504800",
-  "total_picks": 5,
+  "last_updated": "2026-08-21T02:46:09.676518",
+  "total_picks": 7,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -51,6 +51,24 @@
     "CIPLA_20260820": {
       "ticker": "CIPLA",
       "date": "2026-08-20T14:25:21.504797",
+      "entry_price": 1438.0,
+      "sl": 1401.25,
+      "tgt1": 1504.15,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "HONAUT_20260821": {
+      "ticker": "HONAUT",
+      "date": "2026-08-21T02:46:09.676503",
+      "entry_price": 36715.0,
+      "sl": 35491.5,
+      "tgt1": 38917.3,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "CIPLA_20260821": {
+      "ticker": "CIPLA",
+      "date": "2026-08-21T02:46:09.676515",
       "entry_price": 1438.0,
       "sl": 1401.25,
       "tgt1": 1504.15,
