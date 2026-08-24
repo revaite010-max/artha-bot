@@ -1,8 +1,8 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-08-21T02:46:09.676518",
-  "total_picks": 7,
+  "last_updated": "2026-08-24T02:47:24.862265",
+  "total_picks": 10,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -72,6 +72,33 @@
       "entry_price": 1438.0,
       "sl": 1401.25,
       "tgt1": 1504.15,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "GRINDWELL_20260824": {
+      "ticker": "GRINDWELL",
+      "date": "2026-08-24T02:47:24.862245",
+      "entry_price": 2059.8,
+      "sl": 1979.55,
+      "tgt1": 2204.25,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "CAMS_20260824": {
+      "ticker": "CAMS",
+      "date": "2026-08-24T02:47:24.862257",
+      "entry_price": 753.0,
+      "sl": 726.02,
+      "tgt1": 801.56,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "ADANIGREEN_20260824": {
+      "ticker": "ADANIGREEN",
+      "date": "2026-08-24T02:47:24.862262",
+      "entry_price": 1320.0,
+      "sl": 1268.29,
+      "tgt1": 1413.08,
       "strategy": "DIP_BUYING",
       "score": 75
     }
