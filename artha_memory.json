@@ -1,8 +1,8 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-08-24T02:47:24.862265",
-  "total_picks": 10,
+  "last_updated": "2026-08-25T02:41:04.744854",
+  "total_picks": 13,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -99,6 +99,33 @@
       "entry_price": 1320.0,
       "sl": 1268.29,
       "tgt1": 1413.08,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "GODREJPROP_20260825": {
+      "ticker": "GODREJPROP",
+      "date": "2026-08-25T02:41:04.744834",
+      "entry_price": 2039.9,
+      "sl": 1959.22,
+      "tgt1": 2185.12,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "ABBOTINDIA_20260825": {
+      "ticker": "ABBOTINDIA",
+      "date": "2026-08-25T02:41:04.744846",
+      "entry_price": 26420.0,
+      "sl": 25645.95,
+      "tgt1": 27813.29,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "CIPLA_20260825": {
+      "ticker": "CIPLA",
+      "date": "2026-08-25T02:41:04.744851",
+      "entry_price": 1437.9,
+      "sl": 1394.51,
+      "tgt1": 1516.0,
       "strategy": "DIP_BUYING",
       "score": 75
     }
