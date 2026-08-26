@@ -1,8 +1,8 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-08-25T02:41:04.744854",
-  "total_picks": 13,
+  "last_updated": "2026-08-26T02:49:21.687231",
+  "total_picks": 16,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -126,6 +126,33 @@
       "entry_price": 1437.9,
       "sl": 1394.51,
       "tgt1": 1516.0,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "ADANIGREEN_20260826": {
+      "ticker": "ADANIGREEN",
+      "date": "2026-08-26T02:49:21.687212",
+      "entry_price": 1330.0,
+      "sl": 1281.85,
+      "tgt1": 1416.67,
+      "strategy": "DIP_BUYING",
+      "score": 85
+    },
+    "NESTLEIND_20260826": {
+      "ticker": "NESTLEIND",
+      "date": "2026-08-26T02:49:21.687223",
+      "entry_price": 1479.0,
+      "sl": 1434.51,
+      "tgt1": 1559.08,
+      "strategy": "DIP_BUYING",
+      "score": 75
+    },
+    "JSWENERGY_20260826": {
+      "ticker": "JSWENERGY",
+      "date": "2026-08-26T02:49:21.687229",
+      "entry_price": 548.4,
+      "sl": 532.87,
+      "tgt1": 576.35,
       "strategy": "DIP_BUYING",
       "score": 75
     }
