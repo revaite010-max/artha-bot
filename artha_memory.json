@@ -1,8 +1,8 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-08-27T11:49:59.195623",
-  "total_picks": 19,
+  "last_updated": "2026-08-28T13:12:59.631179",
+  "total_picks": 22,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -180,6 +180,33 @@
       "entry_price": 134.63,
       "sl": 131.94,
       "tgt1": 140.02,
+      "strategy": "DEFENSIVE",
+      "score": 80.0
+    },
+    "GOLDBEES_20260828": {
+      "ticker": "GOLDBEES",
+      "date": "2026-08-28T13:12:59.631156",
+      "entry_price": 130.85,
+      "sl": 128.23,
+      "tgt1": 136.08,
+      "strategy": "DEFENSIVE",
+      "score": 80.0
+    },
+    "SILVERBEES_20260828": {
+      "ticker": "SILVERBEES",
+      "date": "2026-08-28T13:12:59.631170",
+      "entry_price": 230.42,
+      "sl": 225.81,
+      "tgt1": 239.64,
+      "strategy": "DEFENSIVE",
+      "score": 80.0
+    },
+    "HDFCGOLD_20260828": {
+      "ticker": "HDFCGOLD",
+      "date": "2026-08-28T13:12:59.631176",
+      "entry_price": 135.29,
+      "sl": 132.58,
+      "tgt1": 140.7,
       "strategy": "DEFENSIVE",
       "score": 80.0
     }
