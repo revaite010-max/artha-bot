@@ -1,8 +1,8 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-09-18T06:22:41.485388",
-  "total_picks": 30,
+  "last_updated": "2026-09-21T06:49:39.931763",
+  "total_picks": 31,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -279,6 +279,15 @@
       "entry_price": 225.71,
       "sl": 221.2,
       "tgt1": 234.74,
+      "strategy": "DEFENSIVE",
+      "score": 80.0
+    },
+    "SILVERBEES_20260921": {
+      "ticker": "SILVERBEES",
+      "date": "2026-09-21T06:49:39.931756",
+      "entry_price": 222.16,
+      "sl": 217.72,
+      "tgt1": 231.05,
       "strategy": "DEFENSIVE",
       "score": 80.0
     }
