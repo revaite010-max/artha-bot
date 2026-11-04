@@ -1,8 +1,8 @@
 {
   "version": "10.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-03T08:22:06.234115",
-  "total_picks": 33,
+  "last_updated": "2026-11-04T07:51:26.793765",
+  "total_picks": 34,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -308,6 +308,15 @@
       "tgt1": 231.46,
       "strategy": "DEFENSIVE",
       "score": 80.0
+    },
+    "TORNTPHARM_20261104": {
+      "ticker": "TORNTPHARM",
+      "date": "2026-11-04T07:51:26.793759",
+      "entry_price": 4691.0,
+      "sl": 4507.47,
+      "tgt1": 5021.35,
+      "strategy": "DIP_BUYING",
+      "score": 75
     }
   },
   "completed_trades": [],
