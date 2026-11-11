@@ -1,6 +1,4 @@
-yfinance
 pandas
 numpy
+yfinance
 requests
-beautifulsoup4
-scikit-learn
