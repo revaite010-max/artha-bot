@@ -1,22 +1,22 @@
 """
-ARTHA v14.0 - Adaptive Multi-Strategy Engine
+ARTHA v16.0 - NSE-Wide Price-Action Strategy Engine
 Auto-Switches Between:
  1. Bull Mode     --> Breakouts & VCP Patterns
  2. Sideways Mode --> Dip-Buying & Mean Reversion (Quality Bounces)
  3. Bear Mode     --> Defensive Assets & Gold ETFs
 """
 
-import yfinance as yf
-import pandas as pd
-import numpy as np
-import requests
-from bs4 import BeautifulSoup
-import os
-import time
+import io
 import json
-from datetime import datetime, timedelta
-import warnings
-warnings.filterwarnings('ignore')
+import math
+import os
+import tempfile
+import time
+from datetime import datetime
+
+import pandas as pd
+import requests
+import yfinance as yf
 
 # ============================================================
 # 🔑 CONFIGURATION & ENVIRONMENT
@@ -25,8 +25,8 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHAT_ID   = os.environ.get("CHAT_ID", "")
 
 BOT_NAME    = "⚡ ARTHA"
-BOT_VERSION = "v14.0"
-BOT_TAGLINE = "Adaptive Multi-Strategy AI"
+BOT_VERSION = "v16.0"
+BOT_TAGLINE = "NSE-Wide Adaptive Multi-Strategy Screener"
 
 MEMORY_FILE = "artha_memory.json"
 
@@ -38,19 +38,8 @@ MAX_POSITIONS_ACTIVE = 3       # Quality over quantity (Max 3 open positions)
 # 🧠 MEMORY MANAGEMENT SYSTEM
 # ============================================================
 def load_memory():
-    if os.path.exists(MEMORY_FILE):
-        try:
-            with open(MEMORY_FILE, 'r') as f:
-                mem = json.load(f)
-                for key in ['pending_evaluations', 'completed_trades', 'failed_stocks', 'mode_stats']:
-                    if key not in mem:
-                        mem[key] = {} if 'evaluations' in key or 'failed' in key or 'stats' in key else []
-                return mem
-        except:
-            pass
-    
-    return {
-        "version": "14.0",
+    defaults = {
+        "version": BOT_VERSION.lstrip("v"),
         "created": datetime.now().isoformat(),
         "last_updated": datetime.now().isoformat(),
         "total_picks": 0,
@@ -59,17 +48,44 @@ def load_memory():
         "pending_evaluations": {},
         "completed_trades": [],
         "failed_stocks": {},
+        "nse_universe": [],
+        "nse_universe_updated_at": None,
+        "nse_source_counts": {},
         "mode_stats": {
             "BREAKOUT": {"wins": 0, "losses": 0},
             "DIP_BUYING": {"wins": 0, "losses": 0},
             "DEFENSIVE": {"wins": 0, "losses": 0}
         }
     }
+    if os.path.exists(MEMORY_FILE):
+        try:
+            with open(MEMORY_FILE, 'r', encoding='utf-8') as f:
+                memory = json.load(f)
+            if isinstance(memory, dict):
+                for key, value in defaults.items():
+                    if key not in memory or (value is not None and
+                                             not isinstance(memory[key], type(value))):
+                        memory[key] = value
+                return memory
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"Could not read memory file ({exc}); starting with fresh memory.")
+    return defaults
 
 def save_memory(memory):
+    """Atomically persist picks and the cached NSE universe."""
+    memory["version"] = BOT_VERSION.lstrip("v")
     memory["last_updated"] = datetime.now().isoformat()
-    with open(MEMORY_FILE, 'w') as f:
-        json.dump(memory, f, indent=2)
+    directory = os.path.dirname(os.path.abspath(MEMORY_FILE))
+    fd, temp_path = tempfile.mkstemp(prefix="artha-memory-", suffix=".tmp", dir=directory)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            json.dump(memory, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temp_path, MEMORY_FILE)
+    finally:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
 
 # ============================================================
 # 🧮 PURE PYTHON TECHNICAL INDICATORS
@@ -103,19 +119,146 @@ def get_bb(s, n=20, std=2):
     stdev = s.rolling(n).std()
     return sma + (std * stdev), sma, sma - (std * stdev)
 
-# ============================================================
-# 🎯 1. ADAPTIVE MARKET REGIME ENGINE
+
+def normalize_yfinance_columns(frame):
+    """Normalize price column names for both single- and multi-ticker yfinance data."""
+    if frame is None or frame.empty:
+        return pd.DataFrame()
+    normalized = frame.copy()
+    if isinstance(normalized.columns, pd.MultiIndex):
+        fields = {"open", "high", "low", "close", "adj close", "volume"}
+        normalized.columns = [
+            next((str(part).strip().lower() for part in column
+                  if str(part).strip().lower() in fields), str(column[0]).lower())
+            .replace(" ", "_") for column in normalized.columns
+        ]
+    else:
+        normalized.columns = [str(column).strip().lower().replace(" ", "_")
+                              for column in normalized.columns]
+    return normalized
+
+
+def extract_ticker_frame(downloaded, ticker, requested_tickers=None):
+    """Extract an individual symbol from a batched yfinance DataFrame."""
+    if downloaded is None or downloaded.empty:
+        return pd.DataFrame()
+    if isinstance(downloaded.columns, pd.MultiIndex):
+        target = ticker.strip().upper()
+        for level in range(downloaded.columns.nlevels):
+            matches = {str(value).strip().upper(): value
+                       for value in downloaded.columns.get_level_values(level)}
+            if target in matches:
+                try:
+                    frame = downloaded.xs(matches[target], axis=1, level=level, drop_level=True)
+                    return normalize_yfinance_columns(frame)
+                except (KeyError, ValueError):
+                    return pd.DataFrame()
+        return pd.DataFrame()
+    if requested_tickers and (len(requested_tickers) != 1 or
+                              requested_tickers[0].upper() != ticker.upper()):
+        return pd.DataFrame()
+    return normalize_yfinance_columns(downloaded)
+
+
+def has_usable_price_history(frame, minimum_rows=200, require_volume=True):
+    required = {"open", "high", "low", "close"}
+    if require_volume:
+        required.add("volume")
+    if frame is None or len(frame) < minimum_rows or not required.issubset(frame.columns):
+        return False
+    prices = frame[["open", "high", "low", "close"]].apply(pd.to_numeric, errors="coerce")
+    if prices.isna().any().any() or (prices <= 0).any().any():
+        return False
+    if require_volume:
+        volume = pd.to_numeric(frame["volume"], errors="coerce")
+        if volume.isna().any() or (volume < 0).any():
+            return False
+    return True
+
+
+NSE_MAINBOARD_URLS = [
+    "https://archives.nseindia.com/content/equities/EQUITY_L.csv",
+    "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv",
+    "https://www.nseindia.com/content/equities/EQUITY_L.csv",
+]
+NSE_SME_URLS = [
+    "https://nsearchives.nseindia.com/emerge/corporates/content/SME_EQUITY_L.csv",
+    "https://www.nseindia.com/emerge/corporates/content/SME_EQUITY_L.csv",
+]
+NSE_MIN_MAINBOARD_ROWS = 1000
+NSE_BATCH_SIZE = 40
+
+
+def parse_nse_equity_master(csv_bytes):
+    """Parse a current NSE equity master file into unique Yahoo Finance tickers."""
+    table = pd.read_csv(io.BytesIO(csv_bytes), dtype=str, encoding="utf-8-sig")
+    columns = {str(name).strip().upper().replace("_", " "): name for name in table.columns}
+    symbol_col = columns.get("SYMBOL") or columns.get("SYMBOL NAME")
+    if not symbol_col:
+        raise ValueError("NSE file has no SYMBOL column")
+    symbols = []
+    for value in table[symbol_col].dropna().astype(str):
+        symbol = value.strip().upper()
+        if symbol and symbol not in {"NAN", "NONE"}:
+            symbols.append(symbol)
+    return sorted({f"{symbol}.NS" for symbol in symbols})
+
+
+def _download_nse_master(session, urls, required=True):
+    """Try official NSE mirrors with short retries before using the cached list."""
+    if isinstance(urls, str):
+        urls = [urls]
+    errors = []
+    for url in urls:
+        for attempt in range(2):
+            try:
+                response = session.get(url, timeout=20)
+                response.raise_for_status()
+                symbols = parse_nse_equity_master(response.content)
+                if symbols and (not required or len(symbols) >= NSE_MIN_MAINBOARD_ROWS):
+                    return symbols
+                raise ValueError(f"NSE master returned only {len(symbols)} symbols: {url}")
+            except (requests.RequestException, ValueError, pd.errors.ParserError) as exc:
+                errors.append(f"{url}: {exc}")
+                if attempt == 0:
+                    time.sleep(0.5)
+    detail = "; ".join(errors[-3:]) or "empty response"
+    if required:
+        raise RuntimeError(f"Could not download required NSE master: {detail}")
+    print(f"[NSE MASTER NOTICE]: Optional SME list unavailable: {detail}")
+    return []
+
+
+def fetch_nse_universe():
+    """Load NSE mainboard and SME equity symbols from NSE's public CSV masters."""
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept": "text/csv,text/plain,*/*",
+        "Referer": "https://www.nseindia.com/",
+    })
+    mainboard = _download_nse_master(session, NSE_MAINBOARD_URLS, required=True)
+    if len(mainboard) < NSE_MIN_MAINBOARD_ROWS:
+        raise ValueError(f"NSE mainboard list unexpectedly small ({len(mainboard)} symbols)")
+    sme = _download_nse_master(session, NSE_SME_URLS, required=False)
+    universe = sorted(set(mainboard).union(sme))
+    counts = {"mainboard": len(mainboard), "sme": len(sme), "unique_total": len(universe),
+              "source": "NSE official equity masters"}
+    return universe, counts
+
+
+def get_legacy_nse_universe():
+    """Small emergency fallback retained only if NSE's master is unreachable and uncached."""
 # ============================================================
 def detect_market_regime():
     """Dynamically determines the market state and picks the active strategy"""
     try:
-        nifty = yf.download("^NSEI", period="6mo", progress=False)
-        if isinstance(nifty.columns, pd.MultiIndex):
-            nifty.columns = [c[0].lower() for c in nifty.columns]
-        else:
-            nifty.columns = [c.lower() for c in nifty.columns]
-            
-        close = nifty['close']
+        nifty = normalize_yfinance_columns(
+            yf.download("^NSEI", period="1y", progress=False, timeout=20))
+        if not has_usable_price_history(nifty, minimum_rows=200, require_volume=False):
+            raise ValueError("NIFTY history is empty, short, or invalid")
+        close = nifty['close'].astype(float)
         
         ema20  = get_ema(close, 20).iloc[-1]
         ema50  = get_ema(close, 50).iloc[-1]
@@ -153,12 +296,13 @@ def detect_market_regime():
             "rsi": round(rsi_val, 1),
             "volatility": round(volatility, 2)
         }
-    except Exception as e:
+    except Exception as exc:
+        print(f"Market regime unavailable: {exc}")
         return {
-            "regime": "SIDEWAYS_BULL",
-            "strategy": "DIP_BUYING",
-            "desc": "Fallback Mode (Dip Buying Active)",
-            "nifty_price": 0, "change_20d": 0, "rsi": 50, "volatility": 1.5
+            "regime": "DATA_UNAVAILABLE",
+            "strategy": "NO_TRADE",
+            "desc": "Market data unavailable; no entry strategy activated",
+            "nifty_price": 0, "change_20d": 0, "rsi": 0, "volatility": 0
         }
 
 # ============================================================
@@ -303,6 +447,93 @@ def scan_dip_buying(df, ticker_clean):
     except:
         return None
 
+
+def scan_price_action(df, ticker_clean):
+    """Find bullish breakouts, engulfing reversals, and support rejections from candles."""
+    try:
+        if df is None or len(df) < 60:
+            return None
+        close = pd.to_numeric(df["close"], errors="coerce")
+        open_ = pd.to_numeric(df["open"], errors="coerce")
+        high = pd.to_numeric(df["high"], errors="coerce")
+        low = pd.to_numeric(df["low"], errors="coerce")
+        volume = pd.to_numeric(df["volume"], errors="coerce")
+        current, previous = float(close.iloc[-1]), float(close.iloc[-2])
+        current_open = float(open_.iloc[-1])
+        current_high, current_low = float(high.iloc[-1]), float(low.iloc[-1])
+        if not all(math.isfinite(float(value)) for value in
+                   (current, previous, current_open, current_high, current_low)):
+            return None
+        if current <= 0 or current_high <= current_low:
+            return None
+
+        atr = float(get_atr(high, low, close, 14).iloc[-1])
+        ema50 = float(get_ema(close, 50).iloc[-1])
+        if not math.isfinite(atr) or atr <= 0 or current <= ema50:
+            return None
+
+        avg_volume = float(volume.rolling(20).mean().iloc[-1])
+        latest_volume = float(volume.iloc[-1])
+        vol_ratio = latest_volume / avg_volume if avg_volume > 0 else 0.0
+        close_location = (current - current_low) / (current_high - current_low)
+        resistance = float(high.iloc[-21:-1].max())
+        support = float(low.iloc[-23:-3].min())
+        previous_open = float(open_.iloc[-2])
+        previous_close = float(close.iloc[-2])
+        signals = []
+
+        breakout = (current > resistance * 1.002 and previous <= resistance * 1.01
+                    and close_location >= 0.70 and vol_ratio >= 1.2)
+        bullish_engulfing = (current > current_open and previous_close < previous_open
+                             and current >= previous_open and current_open <= previous_close
+                             and close_location >= 0.65 and vol_ratio >= 1.0)
+        recent_support_test = float(low.iloc[-3:].min()) <= support + 0.5 * atr
+        support_rejection = (recent_support_test and current > current_open
+                             and current > previous and close_location >= 0.70
+                             and vol_ratio >= 1.0)
+
+        score = 68
+        if breakout:
+            signals.append("20-session resistance breakout")
+            score += 15
+        if bullish_engulfing:
+            signals.append("Bullish engulfing candle")
+            score += 12
+        if support_rejection:
+            signals.append("Support rejection / higher close")
+            score += 10
+        if not signals:
+            return None
+        if close_location >= 0.85:
+            signals.append("Strong close near candle high")
+            score += 5
+        if vol_ratio >= 2.0:
+            signals.append("Above-average volume confirmation")
+            score += 5
+
+        structural_level = resistance if breakout else support
+        stop = max(structural_level - 0.35 * atr, current - 1.6 * atr)
+        risk = current - stop
+        risk_pct = (risk / current) * 100
+        if risk <= 0 or risk_pct > 5.0:
+            return None
+        target1 = round(current + 1.5 * risk, 2)
+        target2 = round(current + 2.5 * risk, 2)
+        return {
+            "ticker": ticker_clean,
+            "strategy": "PRICE_ACTION",
+            "score": min(round(score, 1), 100.0),
+            "price": round(current, 2),
+            "rsi": round(float(get_rsi(close, 14).iloc[-1]), 1),
+            "vol_ratio": round(vol_ratio, 1),
+            "sl": round(stop, 2), "tgt1": target1, "tgt2": target2,
+            "risk_pct": round(risk_pct, 2),
+            "rr_ratio": 1.5,
+            "signals": signals,
+        }
+    except (KeyError, ValueError, TypeError, IndexError, ZeroDivisionError):
+        return None
+
 # ============================================================
 # 🎯 4. STRATEGY C: DEFENSIVE & GOLD ALLOCATOR (For Bear Markets)
 # ============================================================
@@ -351,8 +582,8 @@ def scan_defensive():
 # ============================================================
 # 📥 STOCK UNIVERSE GENERATOR
 # ============================================================
-def get_scan_universe():
-    """Fetches NSE 200 Liquid Stocks for Scanning"""
+def get_legacy_nse_universe():
+    """Emergency fallback only; normal scans use the current NSE masters."""
     liquid_stocks = [
         "RELIANCE","TCS","HDFCBANK","INFY","ICICIBANK","HINDUNILVR","ITC","KOTAKBANK",
         "LT","AXISBANK","BAJFINANCE","MARUTI","ASIANPAINT","TITAN","SUNPHARMA",
@@ -387,7 +618,34 @@ def get_scan_universe():
         "CROMPTON","AMBER","SYMPHONY","QUESS","TEAMLEASE","EXIDEIND","AMARAJABAT",
         "BHARATFORG","TVSMOTOR","ESCORTS","DALBHARAT","AUBANK","EQUITASBNK"
     ]
-    return [f"{s}.NS" for s in set(liquid_stocks)]
+    return [f"{s}.NS" for s in sorted(set(liquid_stocks))]
+
+
+def get_scan_universe(memory):
+    """Refresh all NSE listed equity symbols, with a cached/legacy fail-soft fallback."""
+    try:
+        symbols, counts = fetch_nse_universe()
+        memory["nse_universe"] = symbols
+        memory["nse_universe_updated_at"] = datetime.now().isoformat()
+        memory["nse_source_counts"] = counts
+        print(f"[NSE UNIVERSE]: Refreshed all NSE equity symbols: {counts}")
+        return symbols
+    except Exception as exc:
+        cached = memory.get("nse_universe", [])
+        if cached:
+            print(f"[NSE UNIVERSE WARNING]: Refresh failed ({exc}); using cached list "
+                  f"from {memory.get('nse_universe_updated_at') or 'unknown date'}.")
+            memory["nse_source_counts"]["source"] = "cached NSE master"
+            return cached
+        fallback = get_legacy_nse_universe()
+        memory["nse_source_counts"] = {
+            "source": "legacy fallback (partial universe)",
+            "mainboard": 0, "sme": 0, "unique_total": len(fallback),
+            "warning": str(exc),
+        }
+        print(f"[NSE UNIVERSE ERROR]: Official NSE master unavailable ({exc}); "
+              f"using {len(fallback)} legacy symbols so the bot can still run.")
+        return fallback
 
 # ============================================================
 # 📤 TELEGRAM MESSAGING ENGINE (Safe Text Formatting)
@@ -426,45 +684,76 @@ def main():
     print(f"\n[REGIME DETECTED]: {regime}")
     print(f"[ACTIVE STRATEGY]: {strategy} ({regime_info['desc']})")
 
-    # STEP 2: SCAN MARKET ACCORDING TO ACTIVE STRATEGY
-    results = []
+    # STEP 2: Scan every active NSE equity in bounded price-download batches.
+    universe = get_scan_universe(memory)
+    # Persist a successfully refreshed NSE symbol list before the long market scan.
+    save_memory(memory)
+    results = scan_defensive() if strategy == "DEFENSIVE" else []
+    valid_data_count = 0
+    invalid_data_count = 0
+    download_error_count = 0
+    price_action_count = 0
+    download_error_types = {}
+    print(f"\n[SCANNING]: {len(universe)} NSE symbols in batches of {NSE_BATCH_SIZE}; "
+          f"active setup strategy: {strategy}")
 
-    if strategy == "DEFENSIVE":
-        print("\n[DEFENSIVE MODE]: Scanning Gold ETFs & Protection Assets...")
-        results = scan_defensive()
-    else:
-        universe = get_scan_universe()
-        print(f"\n[SCANNING]: Running {strategy} filters on {len(universe)} stocks...")
-        
-        count = 0
-        for ticker in universe:
-            count += 1
-            if count % 50 == 0:
-                print(f"  Scanned {count}/{len(universe)} | Found: {len(results)}")
-                
-            try:
-                df = yf.download(ticker, period="6mo", progress=False, timeout=8)
-                if df is None or len(df) < 60: continue
+    processed = 0
+    for start in range(0, len(universe), NSE_BATCH_SIZE):
+        tickers = universe[start:start + NSE_BATCH_SIZE]
+        try:
+            downloaded = yf.download(
+                tickers=tickers, period="1y", progress=False, timeout=30,
+                group_by="ticker", auto_adjust=True, threads=True)
+        except Exception as exc:
+            download_error_count += len(tickers)
+            error_type = type(exc).__name__
+            download_error_types[error_type] = download_error_types.get(error_type, 0) + len(tickers)
+            print(f"[YFINANCE BATCH ERROR]: {len(tickers)} symbols skipped ({error_type}).")
+            processed += len(tickers)
+            continue
 
-                if isinstance(df.columns, pd.MultiIndex):
-                    df.columns = [c[0].lower() for c in df.columns]
-                else:
-                    df.columns = [c.lower() for c in df.columns]
-
-                ticker_clean = ticker.replace(".NS", "")
-
-                # Run Strategy Based on Regime
-                if strategy == "BREAKOUT":
-                    res = scan_breakout(df, ticker_clean)
-                elif strategy == "DIP_BUYING":
-                    res = scan_dip_buying(df, ticker_clean)
-                else:
-                    res = None
-
-                if res:
-                    results.append(res)
-            except:
+        for ticker in tickers:
+            processed += 1
+            if processed % 200 == 0:
+                print(f"  Processed {processed}/{len(universe)} | valid data: {valid_data_count} | "
+                      f"setups: {len(results)}")
+            df = extract_ticker_frame(downloaded, ticker, requested_tickers=tickers)
+            if not has_usable_price_history(df, minimum_rows=200, require_volume=True):
+                invalid_data_count += 1
                 continue
+            valid_data_count += 1
+
+            try:
+                ticker_clean = ticker[:-3] if ticker.endswith(".NS") else ticker
+                if strategy == "BREAKOUT":
+                    result = scan_breakout(df, ticker_clean)
+                elif strategy == "DIP_BUYING":
+                    result = scan_dip_buying(df, ticker_clean)
+                else:
+                    result = None
+
+                # Price action is an additional selection path and confirmation layer.
+                if strategy in {"BREAKOUT", "DIP_BUYING"}:
+                    price_action = scan_price_action(df, ticker_clean)
+                    if price_action:
+                        price_action_count += 1
+                        if result:
+                            result["score"] = min(100, result["score"] + 5)
+                            result["signals"] = list(dict.fromkeys(
+                                result["signals"] + price_action["signals"]))
+                        else:
+                            result = price_action
+                if result:
+                    results.append(result)
+            except Exception as exc:
+                error_type = type(exc).__name__
+                download_error_types[error_type] = download_error_types.get(error_type, 0) + 1
+
+    print(f"[NSE COVERAGE]: {valid_data_count}/{len(universe)} stocks had valid one-year OHLCV; "
+          f"{invalid_data_count} empty/short/invalid; {download_error_count} in failed batches.")
+    print(f"[PRICE ACTION]: {price_action_count} stocks passed candle/structure checks.")
+    if download_error_types:
+        print(f"[SCAN ERROR TYPES]: {download_error_types}")
 
     # Rank & Pick Top Setups
     results.sort(key=lambda x: x["score"], reverse=True)
@@ -502,9 +791,19 @@ def main():
     msg += f"20D Momentum : {regime_info['change_20d']:+.2f}%\n"
     msg += f"System Mode  : {regime_info['desc']}\n\n"
 
+    counts = memory.get("nse_source_counts", {})
+    msg += "[🇮🇳 NSE UNIVERSE & DATA COVERAGE]\n"
+    msg += f"Universe source : {counts.get('source', 'unknown')}\n"
+    msg += f"Mainboard / SME : {counts.get('mainboard', 0)} / {counts.get('sme', 0)}\n"
+    msg += f"NSE symbols     : {len(universe)}\n"
+    msg += f"Valid 1Y OHLCV  : {valid_data_count}\n"
+    msg += f"Invalid / failed: {invalid_data_count} / {download_error_count}\n"
+    msg += f"Universe updated: {memory.get('nse_universe_updated_at') or 'fallback / not refreshed'}\n\n"
+
     msg += "[📊 SCAN SUMMARY]\n"
     msg += f"Active Strategy : {strategy}\n"
     msg += f"Setups Qualified: {len(results)}\n"
+    msg += f"Price Action     : {price_action_count} confirmed signals\n"
     msg += f"Top Selected    : {len(top_picks)}\n\n"
 
     if top_picks:
@@ -539,8 +838,8 @@ def main():
             msg += "----------------------------------------\n\n"
     else:
         msg += "[📉 NO ACTIONABLE SETUPS TODAY]\n"
-        msg += "No stocks met strict quality bounds for current mode.\n"
-        msg += "Capital Protection Active.\n\n"
+        msg += "No stock met the current strategy and price-action filters.\n"
+        msg += "No trade is suggested when confirmation is missing.\n\n"
 
     msg += "[📐 DISCIPLINE RULES]\n"
     msg += "1. Enter ONLY if setup holds after 9:45 AM.\n"
@@ -551,7 +850,7 @@ def main():
     msg += f"{BOT_NAME} {BOT_VERSION} | {BOT_TAGLINE}\n"
 
     send_telegram(msg)
-    print("\n✅ ARTHA v14.0 Run Complete!")
+    print(f"\n✅ ARTHA {BOT_VERSION} Run Complete!")
 
 if __name__ == "__main__":
     main()
