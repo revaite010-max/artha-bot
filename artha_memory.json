@@ -1,8 +1,8 @@
 {
-  "version": "17.0",
+  "version": "16.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-11T14:24:54.254170",
-  "total_picks": 37,
+  "last_updated": "2026-11-11T14:30:50.168375",
+  "total_picks": 40,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -18,10 +18,10 @@
     },
     "DEVYANI_20261111": {
       "ticker": "DEVYANI",
-      "date": "2026-11-11T08:10:21.201854",
-      "entry_price": 132.01,
+      "date": "2026-11-11T14:30:50.168370",
+      "entry_price": 132.03,
       "sl": 129.61,
-      "tgt1": 135.6,
+      "tgt1": 135.65,
       "strategy": "PRICE_ACTION",
       "score": 95
     },
@@ -42,6 +42,24 @@
       "tgt1": 180.37,
       "strategy": "PRICE_ACTION",
       "score": 93
+    },
+    "AHLADA_20261111": {
+      "ticker": "AHLADA",
+      "date": "2026-11-11T14:30:50.168355",
+      "entry_price": 38.63,
+      "sl": 37.85,
+      "tgt1": 39.8,
+      "strategy": "PRICE_ACTION",
+      "score": 100.0
+    },
+    "TSFINV_20261111": {
+      "ticker": "TSFINV",
+      "date": "2026-11-11T14:30:50.168366",
+      "entry_price": 430.35,
+      "sl": 412.36,
+      "tgt1": 457.34,
+      "strategy": "PRICE_ACTION",
+      "score": 100
     }
   },
   "completed_trades": [
@@ -3509,7 +3527,7 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-11T14:22:34.459793",
+  "nse_universe_updated_at": "2026-11-11T14:28:14.610865",
   "nse_source_counts": {
     "mainboard": 2633,
     "sme": 584,
