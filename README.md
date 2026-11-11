@@ -14,15 +14,7 @@ The NSE website and Yahoo Finance can rate-limit or deny automated requests. Che
 
 ## Price-action selection
 
-For eligible bullish regimes, ARTHA checks daily candles for 20-session resistance breakouts, bullish engulfing patterns, and support rejections. NIFTY-relative strength is used as a market-context filter; a best-effort set of mapped sector indices adds sector-relative-strength checks when Yahoo Finance supplies those histories. Unmapped stocks or unavailable sector indices fall back to broad-market relative strength. Candidates also need a 20-session average traded value above the configurable liquidity floor and a valid, recent OHLC history. Extreme recent close-to-close jumps are flagged and excluded from entry selection for review.
-
-## Research, outcomes, and risk
-
-- A fixed-rule walk-forward price-action backtest evaluates signals using the next session's open, a 20-session maximum holding period, stop-first handling when daily bars touch both barriers, and a configurable approximate round-trip cost (`BACKTEST_COST_BPS`, default 20 bps). The daily report gives sample count, win rate, average R, profit factor, and net R. It is a research diagnostic, not a forecast; it uses the current universe and therefore has survivorship bias and limited history.
-- Selected ideas are stored with their signal date, price, stop/targets, pattern, market/sector strength, liquidity, sizing, and other evidence. Later workflow runs resolve those records against daily bars and store outcome, holding period, and R multiple. Older picks without reliable price history expire as `DATA_UNAVAILABLE` after 45 days and are not counted as wins or losses. This is paper tracking, not broker execution; it assumes the recorded close as the entry reference.
-- Position size is based on a per-trade risk budget (default 0.5% of configured capital), remaining portfolio heat (default cap 5%), and a per-position allocation cap (default 25%). These can be changed with `TOTAL_CAPITAL_INR`, `RISK_PER_TRADE_PCT`, `MAX_PORTFOLIO_HEAT_PCT`, and `MAX_POSITION_VALUE_PCT`.
-- Average daily turnover defaults to Rs. 2 crore and can be changed with `MIN_AVG_DAILY_TURNOVER_INR`.
-- Sector mappings cover selected liquid NSE symbols only. Sector-index data is best-effort and falls back to NIFTY when unavailable; this is not a complete NSE industry classification.
+For eligible bullish regimes, ARTHA additionally checks daily candles for a 20-session resistance breakout with a strong close and volume, a bullish engulfing candle, or a rejection from recent support. These patterns can create an independent price-action setup or add confirmation to the regime strategy. Every candidate still needs a defined stop with no more than 5% modeled risk; price patterns are not guarantees.
 
 ## Run locally
 
