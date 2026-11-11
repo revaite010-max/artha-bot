@@ -1,314 +1,11 @@
 {
-  "version": "16.0",
+  "version": "17.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-11T08:10:21.201879",
+  "last_updated": "2026-11-11T14:24:54.254170",
   "total_picks": 37,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
-    "RAIN_20260808": {
-      "ticker": "RAIN",
-      "date": "2026-08-08T17:19:03.966518",
-      "entry_price": 222.88,
-      "sl": 218.89,
-      "tgt1": 228.87,
-      "tgt2": 232.86,
-      "score": 95.0,
-      "sector": "Other",
-      "entry_type": "PULLBACK",
-      "rsi": 56.8
-    },
-    "GPTHEALTH_20260808": {
-      "ticker": "GPTHEALTH",
-      "date": "2026-08-08T17:19:03.966532",
-      "entry_price": 159.44,
-      "sl": 155.91,
-      "tgt1": 164.74,
-      "tgt2": 168.27,
-      "score": 75.0,
-      "sector": "Other",
-      "entry_type": "PULLBACK",
-      "rsi": 62.0
-    },
-    "TRENT_20260820": {
-      "ticker": "TRENT",
-      "date": "2026-08-20T14:25:21.504783",
-      "entry_price": 2970.0,
-      "sl": 2869.25,
-      "tgt1": 3151.35,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "ADANIPORTS_20260820": {
-      "ticker": "ADANIPORTS",
-      "date": "2026-08-20T14:25:21.504793",
-      "entry_price": 1696.0,
-      "sl": 1650.33,
-      "tgt1": 1778.21,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "CIPLA_20260820": {
-      "ticker": "CIPLA",
-      "date": "2026-08-20T14:25:21.504797",
-      "entry_price": 1438.0,
-      "sl": 1401.25,
-      "tgt1": 1504.15,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "HONAUT_20260821": {
-      "ticker": "HONAUT",
-      "date": "2026-08-21T02:46:09.676503",
-      "entry_price": 36715.0,
-      "sl": 35491.5,
-      "tgt1": 38917.3,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "CIPLA_20260821": {
-      "ticker": "CIPLA",
-      "date": "2026-08-21T02:46:09.676515",
-      "entry_price": 1438.0,
-      "sl": 1401.25,
-      "tgt1": 1504.15,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "GRINDWELL_20260824": {
-      "ticker": "GRINDWELL",
-      "date": "2026-08-24T02:47:24.862245",
-      "entry_price": 2059.8,
-      "sl": 1979.55,
-      "tgt1": 2204.25,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "CAMS_20260824": {
-      "ticker": "CAMS",
-      "date": "2026-08-24T02:47:24.862257",
-      "entry_price": 753.0,
-      "sl": 726.02,
-      "tgt1": 801.56,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "ADANIGREEN_20260824": {
-      "ticker": "ADANIGREEN",
-      "date": "2026-08-24T02:47:24.862262",
-      "entry_price": 1320.0,
-      "sl": 1268.29,
-      "tgt1": 1413.08,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "GODREJPROP_20260825": {
-      "ticker": "GODREJPROP",
-      "date": "2026-08-25T02:41:04.744834",
-      "entry_price": 2039.9,
-      "sl": 1959.22,
-      "tgt1": 2185.12,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "ABBOTINDIA_20260825": {
-      "ticker": "ABBOTINDIA",
-      "date": "2026-08-25T02:41:04.744846",
-      "entry_price": 26420.0,
-      "sl": 25645.95,
-      "tgt1": 27813.29,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "CIPLA_20260825": {
-      "ticker": "CIPLA",
-      "date": "2026-08-25T02:41:04.744851",
-      "entry_price": 1437.9,
-      "sl": 1394.51,
-      "tgt1": 1516.0,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "ADANIGREEN_20260826": {
-      "ticker": "ADANIGREEN",
-      "date": "2026-08-26T02:49:21.687212",
-      "entry_price": 1330.0,
-      "sl": 1281.85,
-      "tgt1": 1416.67,
-      "strategy": "DIP_BUYING",
-      "score": 85
-    },
-    "NESTLEIND_20260826": {
-      "ticker": "NESTLEIND",
-      "date": "2026-08-26T02:49:21.687223",
-      "entry_price": 1479.0,
-      "sl": 1434.51,
-      "tgt1": 1559.08,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "JSWENERGY_20260826": {
-      "ticker": "JSWENERGY",
-      "date": "2026-08-26T02:49:21.687229",
-      "entry_price": 548.4,
-      "sl": 532.87,
-      "tgt1": 576.35,
-      "strategy": "DIP_BUYING",
-      "score": 75
-    },
-    "GOLDBEES_20260827": {
-      "ticker": "GOLDBEES",
-      "date": "2026-08-27T11:49:59.195603",
-      "entry_price": 130.05,
-      "sl": 127.45,
-      "tgt1": 135.25,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260827": {
-      "ticker": "SILVERBEES",
-      "date": "2026-08-27T11:49:59.195615",
-      "entry_price": 226.37,
-      "sl": 221.84,
-      "tgt1": 235.42,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "HDFCGOLD_20260827": {
-      "ticker": "HDFCGOLD",
-      "date": "2026-08-27T11:49:59.195620",
-      "entry_price": 134.63,
-      "sl": 131.94,
-      "tgt1": 140.02,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "GOLDBEES_20260828": {
-      "ticker": "GOLDBEES",
-      "date": "2026-08-28T13:12:59.631156",
-      "entry_price": 130.85,
-      "sl": 128.23,
-      "tgt1": 136.08,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260828": {
-      "ticker": "SILVERBEES",
-      "date": "2026-08-28T13:12:59.631170",
-      "entry_price": 230.42,
-      "sl": 225.81,
-      "tgt1": 239.64,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "HDFCGOLD_20260828": {
-      "ticker": "HDFCGOLD",
-      "date": "2026-08-28T13:12:59.631176",
-      "entry_price": 135.29,
-      "sl": 132.58,
-      "tgt1": 140.7,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "GOLDBEES_20260831": {
-      "ticker": "GOLDBEES",
-      "date": "2026-08-31T07:22:09.891254",
-      "entry_price": 127.37,
-      "sl": 124.82,
-      "tgt1": 132.46,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260831": {
-      "ticker": "SILVERBEES",
-      "date": "2026-08-31T07:22:09.891264",
-      "entry_price": 222.92,
-      "sl": 218.46,
-      "tgt1": 231.84,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "HDFCGOLD_20260831": {
-      "ticker": "HDFCGOLD",
-      "date": "2026-08-31T07:22:09.891269",
-      "entry_price": 131.74,
-      "sl": 129.11,
-      "tgt1": 137.01,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "GOLDBEES_20260904": {
-      "ticker": "GOLDBEES",
-      "date": "2026-09-04T06:19:13.930731",
-      "entry_price": 127.01,
-      "sl": 124.47,
-      "tgt1": 132.09,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260904": {
-      "ticker": "SILVERBEES",
-      "date": "2026-09-04T06:19:13.930742",
-      "entry_price": 222.15,
-      "sl": 217.71,
-      "tgt1": 231.04,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "HDFCGOLD_20260904": {
-      "ticker": "HDFCGOLD",
-      "date": "2026-09-04T06:19:13.930747",
-      "entry_price": 131.28,
-      "sl": 128.65,
-      "tgt1": 136.53,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260909": {
-      "ticker": "SILVERBEES",
-      "date": "2026-09-09T06:26:26.749522",
-      "entry_price": 222.87,
-      "sl": 218.41,
-      "tgt1": 231.78,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260910": {
-      "ticker": "SILVERBEES",
-      "date": "2026-09-10T06:24:35.632581",
-      "entry_price": 225.71,
-      "sl": 221.2,
-      "tgt1": 234.74,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260921": {
-      "ticker": "SILVERBEES",
-      "date": "2026-09-21T06:49:39.931756",
-      "entry_price": 222.16,
-      "sl": 217.72,
-      "tgt1": 231.05,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260922": {
-      "ticker": "SILVERBEES",
-      "date": "2026-09-22T06:36:11.457346",
-      "entry_price": 220.25,
-      "sl": 215.84,
-      "tgt1": 229.06,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
-    "SILVERBEES_20260923": {
-      "ticker": "SILVERBEES",
-      "date": "2026-09-23T06:23:37.816980",
-      "entry_price": 222.56,
-      "sl": 218.11,
-      "tgt1": 231.46,
-      "strategy": "DEFENSIVE",
-      "score": 80.0
-    },
     "TORNTPHARM_20261104": {
       "ticker": "TORNTPHARM",
       "date": "2026-11-04T07:51:26.793759",
@@ -316,7 +13,8 @@
       "sl": 4507.47,
       "tgt1": 5021.35,
       "strategy": "DIP_BUYING",
-      "score": 75
+      "score": 75,
+      "bars_held": 4
     },
     "DEVYANI_20261111": {
       "ticker": "DEVYANI",
@@ -346,7 +44,190 @@
       "score": 93
     }
   },
-  "completed_trades": [],
+  "completed_trades": [
+    {
+      "ticker": "TRENT",
+      "date": "2026-08-20T14:25:21.504783",
+      "entry_price": 2970.0,
+      "sl": 2869.25,
+      "tgt1": 3151.35,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 5,
+      "outcome": "STOP",
+      "exit_price": 2869.25,
+      "resolved_at": "2026-08-27",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "ADANIPORTS",
+      "date": "2026-08-20T14:25:21.504793",
+      "entry_price": 1696.0,
+      "sl": 1650.33,
+      "tgt1": 1778.21,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 7,
+      "outcome": "STOP",
+      "exit_price": 1650.33,
+      "resolved_at": "2026-08-31",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "CIPLA",
+      "date": "2026-08-20T14:25:21.504797",
+      "entry_price": 1438.0,
+      "sl": 1401.25,
+      "tgt1": 1504.15,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 4,
+      "outcome": "STOP",
+      "exit_price": 1401.25,
+      "resolved_at": "2026-08-26",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "CIPLA",
+      "date": "2026-08-21T02:46:09.676515",
+      "entry_price": 1438.0,
+      "sl": 1401.25,
+      "tgt1": 1504.15,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 3,
+      "outcome": "STOP",
+      "exit_price": 1401.25,
+      "resolved_at": "2026-08-26",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "GRINDWELL",
+      "date": "2026-08-24T02:47:24.862245",
+      "entry_price": 2059.8,
+      "sl": 1979.55,
+      "tgt1": 2204.25,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 6,
+      "outcome": "STOP",
+      "exit_price": 1979.55,
+      "resolved_at": "2026-09-01",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "CAMS",
+      "date": "2026-08-24T02:47:24.862257",
+      "entry_price": 753.0,
+      "sl": 726.02,
+      "tgt1": 801.56,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 12,
+      "outcome": "STOP",
+      "exit_price": 726.02,
+      "resolved_at": "2026-09-09",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "ADANIGREEN",
+      "date": "2026-08-24T02:47:24.862262",
+      "entry_price": 1320.0,
+      "sl": 1268.29,
+      "tgt1": 1413.08,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 5,
+      "outcome": "STOP",
+      "exit_price": 1268.29,
+      "resolved_at": "2026-08-31",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "GODREJPROP",
+      "date": "2026-08-25T02:41:04.744834",
+      "entry_price": 2039.9,
+      "sl": 1959.22,
+      "tgt1": 2185.12,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 6,
+      "outcome": "STOP",
+      "exit_price": 1950.0,
+      "resolved_at": "2026-09-02",
+      "r_multiple": -1.114
+    },
+    {
+      "ticker": "ABBOTINDIA",
+      "date": "2026-08-25T02:41:04.744846",
+      "entry_price": 26420.0,
+      "sl": 25645.95,
+      "tgt1": 27813.29,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 10,
+      "outcome": "STOP",
+      "exit_price": 25645.95,
+      "resolved_at": "2026-09-08",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "CIPLA",
+      "date": "2026-08-25T02:41:04.744851",
+      "entry_price": 1437.9,
+      "sl": 1394.51,
+      "tgt1": 1516.0,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 7,
+      "outcome": "STOP",
+      "exit_price": 1394.51,
+      "resolved_at": "2026-09-03",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "ADANIGREEN",
+      "date": "2026-08-26T02:49:21.687212",
+      "entry_price": 1330.0,
+      "sl": 1281.85,
+      "tgt1": 1416.67,
+      "strategy": "DIP_BUYING",
+      "score": 85,
+      "bars_held": 3,
+      "outcome": "STOP",
+      "exit_price": 1281.85,
+      "resolved_at": "2026-08-31",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "NESTLEIND",
+      "date": "2026-08-26T02:49:21.687223",
+      "entry_price": 1479.0,
+      "sl": 1434.51,
+      "tgt1": 1559.08,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 3,
+      "outcome": "STOP",
+      "exit_price": 1434.51,
+      "resolved_at": "2026-08-31",
+      "r_multiple": -1.0
+    },
+    {
+      "ticker": "JSWENERGY",
+      "date": "2026-08-26T02:49:21.687229",
+      "entry_price": 548.4,
+      "sl": 532.87,
+      "tgt1": 576.35,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "bars_held": 1,
+      "outcome": "STOP",
+      "exit_price": 532.87,
+      "resolved_at": "2026-08-27",
+      "r_multiple": -1.0
+    }
+  ],
   "sector_performance": {},
   "pattern_performance": {},
   "score_range_performance": {},
@@ -3628,11 +3509,277 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-11T08:08:52.347182",
+  "nse_universe_updated_at": "2026-11-11T14:22:34.459793",
   "nse_source_counts": {
     "mainboard": 2633,
     "sme": 584,
     "unique_total": 3217,
     "source": "NSE official equity masters"
+  },
+  "expired_signals": [
+    {
+      "ticker": "RAIN",
+      "date": "2026-08-08T17:19:03.966518",
+      "entry_price": 222.88,
+      "sl": 218.89,
+      "tgt1": 228.87,
+      "tgt2": 232.86,
+      "score": 95.0,
+      "sector": "Other",
+      "entry_type": "PULLBACK",
+      "rsi": 56.8,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "GPTHEALTH",
+      "date": "2026-08-08T17:19:03.966532",
+      "entry_price": 159.44,
+      "sl": 155.91,
+      "tgt1": 164.74,
+      "tgt2": 168.27,
+      "score": 75.0,
+      "sector": "Other",
+      "entry_type": "PULLBACK",
+      "rsi": 62.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "HONAUT",
+      "date": "2026-08-21T02:46:09.676503",
+      "entry_price": 36715.0,
+      "sl": 35491.5,
+      "tgt1": 38917.3,
+      "strategy": "DIP_BUYING",
+      "score": 75,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "GOLDBEES",
+      "date": "2026-08-27T11:49:59.195603",
+      "entry_price": 130.05,
+      "sl": 127.45,
+      "tgt1": 135.25,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-08-27T11:49:59.195615",
+      "entry_price": 226.37,
+      "sl": 221.84,
+      "tgt1": 235.42,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "HDFCGOLD",
+      "date": "2026-08-27T11:49:59.195620",
+      "entry_price": 134.63,
+      "sl": 131.94,
+      "tgt1": 140.02,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "GOLDBEES",
+      "date": "2026-08-28T13:12:59.631156",
+      "entry_price": 130.85,
+      "sl": 128.23,
+      "tgt1": 136.08,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-08-28T13:12:59.631170",
+      "entry_price": 230.42,
+      "sl": 225.81,
+      "tgt1": 239.64,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "HDFCGOLD",
+      "date": "2026-08-28T13:12:59.631176",
+      "entry_price": 135.29,
+      "sl": 132.58,
+      "tgt1": 140.7,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "GOLDBEES",
+      "date": "2026-08-31T07:22:09.891254",
+      "entry_price": 127.37,
+      "sl": 124.82,
+      "tgt1": 132.46,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-08-31T07:22:09.891264",
+      "entry_price": 222.92,
+      "sl": 218.46,
+      "tgt1": 231.84,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "HDFCGOLD",
+      "date": "2026-08-31T07:22:09.891269",
+      "entry_price": 131.74,
+      "sl": 129.11,
+      "tgt1": 137.01,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "GOLDBEES",
+      "date": "2026-09-04T06:19:13.930731",
+      "entry_price": 127.01,
+      "sl": 124.47,
+      "tgt1": 132.09,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-09-04T06:19:13.930742",
+      "entry_price": 222.15,
+      "sl": 217.71,
+      "tgt1": 231.04,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "HDFCGOLD",
+      "date": "2026-09-04T06:19:13.930747",
+      "entry_price": 131.28,
+      "sl": 128.65,
+      "tgt1": 136.53,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-09-09T06:26:26.749522",
+      "entry_price": 222.87,
+      "sl": 218.41,
+      "tgt1": 231.78,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-09-10T06:24:35.632581",
+      "entry_price": 225.71,
+      "sl": 221.2,
+      "tgt1": 234.74,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-09-21T06:49:39.931756",
+      "entry_price": 222.16,
+      "sl": 217.72,
+      "tgt1": 231.05,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-09-22T06:36:11.457346",
+      "entry_price": 220.25,
+      "sl": 215.84,
+      "tgt1": 229.06,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    },
+    {
+      "ticker": "SILVERBEES",
+      "date": "2026-09-23T06:23:37.816980",
+      "entry_price": 222.56,
+      "sl": 218.11,
+      "tgt1": 231.46,
+      "strategy": "DEFENSIVE",
+      "score": 80.0,
+      "status": "DATA_UNAVAILABLE",
+      "expired_at": "2026-11-11"
+    }
+  ],
+  "research_summary": {
+    "asof": "2026-11-11T14:24:54.254015",
+    "price_action_walk_forward_1y": {
+      "trades": 1806,
+      "wins": 599,
+      "win_rate_pct": 33.2,
+      "average_r": -0.231,
+      "profit_factor": 0.67,
+      "net_r": -416.72
+    },
+    "recent_outcomes": {
+      "trades": 13,
+      "win_rate_pct": 0.0,
+      "average_r": -1.009
+    },
+    "outcomes_by_strategy": {
+      "DIP_BUYING": {
+        "trades": 13,
+        "win_rate_pct": 0.0,
+        "average_r": -1.009
+      }
+    },
+    "outcomes_by_pattern": {
+      "DIP_BUYING": {
+        "trades": 13,
+        "win_rate_pct": 0.0,
+        "average_r": -1.009
+      }
+    },
+    "data_quality_review": {
+      "extreme_recent_moves": [
+        "BHAGYANGR",
+        "MELSTAR"
+      ],
+      "stale_history": []
+    },
+    "backtest_note": "Fixed rules; next-session entry; conservative stop-first; approximate 20 bps costs."
   }
 }
