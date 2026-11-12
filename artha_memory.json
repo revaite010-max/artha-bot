@@ -1,8 +1,8 @@
 {
   "version": "16.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-11T14:30:50.168375",
-  "total_picks": 40,
+  "last_updated": "2026-11-12T08:44:02.618599",
+  "total_picks": 43,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -60,6 +60,33 @@
       "tgt1": 457.34,
       "strategy": "PRICE_ACTION",
       "score": 100
+    },
+    "GODREJPROP_20261112": {
+      "ticker": "GODREJPROP",
+      "date": "2026-11-12T08:44:02.618579",
+      "entry_price": 1860.1,
+      "sl": 1828.59,
+      "tgt1": 1907.37,
+      "strategy": "PRICE_ACTION",
+      "score": 100
+    },
+    "INDGN_20261112": {
+      "ticker": "INDGN",
+      "date": "2026-11-12T08:44:02.618590",
+      "entry_price": 651.5,
+      "sl": 630.18,
+      "tgt1": 683.49,
+      "strategy": "PRICE_ACTION",
+      "score": 100.0
+    },
+    "DLF_20261112": {
+      "ticker": "DLF",
+      "date": "2026-11-12T08:44:02.618595",
+      "entry_price": 765.15,
+      "sl": 752.76,
+      "tgt1": 783.74,
+      "strategy": "PRICE_ACTION",
+      "score": 95
     }
   },
   "completed_trades": [
@@ -3081,6 +3108,7 @@
     "SURYODAY.NS",
     "SUTLEJTEX.NS",
     "SUVEN.NS",
+    "SUVID-RE.NS",
     "SUVIDHAA.NS",
     "SUYOG.NS",
     "SUZLON.NS",
@@ -3527,11 +3555,11 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-11T14:28:14.610865",
+  "nse_universe_updated_at": "2026-11-12T08:41:52.193126",
   "nse_source_counts": {
-    "mainboard": 2633,
+    "mainboard": 2635,
     "sme": 584,
-    "unique_total": 3217,
+    "unique_total": 3218,
     "source": "NSE official equity masters"
   },
   "expired_signals": [
