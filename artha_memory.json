@@ -1,8 +1,8 @@
 {
   "version": "16.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-12T08:44:02.618599",
-  "total_picks": 43,
+  "last_updated": "2026-11-13T08:35:11.702171",
+  "total_picks": 46,
   "total_wins": 0,
   "total_losses": 0,
   "pending_evaluations": {
@@ -87,6 +87,33 @@
       "tgt1": 783.74,
       "strategy": "PRICE_ACTION",
       "score": 95
+    },
+    "ANGELONE_20261113": {
+      "ticker": "ANGELONE",
+      "date": "2026-11-13T08:35:11.702153",
+      "entry_price": 351.5,
+      "sl": 340.29,
+      "tgt1": 368.32,
+      "strategy": "PRICE_ACTION",
+      "score": 88
+    },
+    "ANURAS_20261113": {
+      "ticker": "ANURAS",
+      "date": "2026-11-13T08:35:11.702162",
+      "entry_price": 1263.5,
+      "sl": 1210.75,
+      "tgt1": 1342.63,
+      "strategy": "PRICE_ACTION",
+      "score": 88
+    },
+    "DHANBANK_20261113": {
+      "ticker": "DHANBANK",
+      "date": "2026-11-13T08:35:11.702167",
+      "entry_price": 39.18,
+      "sl": 37.3,
+      "tgt1": 42.01,
+      "strategy": "PRICE_ACTION",
+      "score": 88
     }
   },
   "completed_trades": [
@@ -3555,10 +3582,10 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-12T08:41:52.193126",
+  "nse_universe_updated_at": "2026-11-13T08:32:09.258203",
   "nse_source_counts": {
     "mainboard": 2635,
-    "sme": 584,
+    "sme": 583,
     "unique_total": 3218,
     "source": "NSE official equity masters"
   },
