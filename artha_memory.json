@@ -1,7 +1,7 @@
 {
-  "version": "16.0",
+  "version": "18.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-17T09:37:27.122267",
+  "last_updated": "2026-11-17T17:04:50.022317",
   "total_picks": 52,
   "total_wins": 0,
   "total_losses": 0,
@@ -3634,7 +3634,7 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-17T09:35:29.986147",
+  "nse_universe_updated_at": "2026-11-17T17:02:24.651887",
   "nse_source_counts": {
     "mainboard": 2633,
     "sme": 583,
@@ -3906,5 +3906,136 @@
       "stale_history": []
     },
     "backtest_note": "Fixed rules; next-session entry; conservative stop-first; approximate 20 bps costs."
+  },
+  "ai_training_summary": {
+    "status": "INSUFFICIENT_CLASS_BALANCE",
+    "samples": 499,
+    "validation_auc": null,
+    "validation_samples": 95,
+    "fit_samples": 499,
+    "raw_samples": 499,
+    "purged_training_dates": 12,
+    "training_samples": 0
+  },
+  "paper_account": {
+    "starting_cash": 100000.0,
+    "cash": 100000.0,
+    "positions": {},
+    "pending_entries": [
+      {
+        "ticker": "DAMCAPITAL",
+        "signal_date": "2026-11-17",
+        "reference_close": 148.6,
+        "entry_trigger": null,
+        "stop": 145.5,
+        "target1": 153.25,
+        "target2": 156.35,
+        "rr1": 1.5000000000000047,
+        "rr2": 2.5000000000000044,
+        "strategy": "PRICE_ACTION",
+        "rule_score": 100.0,
+        "ai_score": null,
+        "ai_features": {
+          "rsi14": 66.85515038764217,
+          "volume_ratio": 2.163015119842927,
+          "close_location": 0.8667361299394062,
+          "resistance_distance_pct": 0.5412740427871654,
+          "ema50_distance_pct": 4.794831061013549,
+          "ema200_distance_pct": -6.124705125706664,
+          "momentum20_pct": 2.6739518346024393,
+          "relative_strength60_pct": -2.155356714039658,
+          "sector_relative_strength60_pct": -2.155356714039658,
+          "atr_pct": 4.418860490343704,
+          "log_turnover": 3.961784739628613
+        },
+        "signals": [
+          "20-session resistance breakout",
+          "Bullish engulfing candle",
+          "Strong close near candle high",
+          "Above-average volume"
+        ],
+        "status": "QUEUED_NEXT_SESSION"
+      },
+      {
+        "ticker": "BANKINDIA",
+        "signal_date": "2026-11-17",
+        "reference_close": 159.28,
+        "entry_trigger": null,
+        "stop": 155.18,
+        "target1": 165.43,
+        "target2": 169.53,
+        "rr1": 1.5000000000000036,
+        "rr2": 2.5000000000000036,
+        "strategy": "PRICE_ACTION",
+        "rule_score": 97,
+        "ai_score": null,
+        "ai_features": {
+          "rsi14": 85.38423297001916,
+          "volume_ratio": 1.919446869221866,
+          "close_location": 0.8992580837673612,
+          "resistance_distance_pct": 1.5945911592455841,
+          "ema50_distance_pct": 14.065912883717013,
+          "ema200_distance_pct": 12.69881224759497,
+          "momentum20_pct": 20.338469359934376,
+          "relative_strength60_pct": 6.969650323612542,
+          "sector_relative_strength60_pct": 6.969650323612542,
+          "atr_pct": 2.87185162592953,
+          "log_turnover": 7.387007408195993
+        },
+        "signals": [
+          "20-session resistance breakout",
+          "Strong close near candle high",
+          "Above-average volume",
+          "Outperforming NIFTY 60D",
+          "Outperforming None 60D"
+        ],
+        "status": "QUEUED_NEXT_SESSION"
+      },
+      {
+        "ticker": "HINDOILEXP",
+        "signal_date": "2026-11-17",
+        "reference_close": 222.29,
+        "entry_trigger": null,
+        "stop": 212.87,
+        "target1": 236.42,
+        "target2": 245.84,
+        "rr1": 1.5000000000000016,
+        "rr2": 2.5000000000000044,
+        "strategy": "PRICE_ACTION",
+        "rule_score": 97,
+        "ai_score": null,
+        "ai_features": {
+          "rsi14": 89.05005976708887,
+          "volume_ratio": 3.1888266610060407,
+          "close_location": 0.8733641361312542,
+          "resistance_distance_pct": 2.579601484362626,
+          "ema50_distance_pct": 30.699142914278976,
+          "ema200_distance_pct": 37.98273938492487,
+          "momentum20_pct": 33.56366224155958,
+          "relative_strength60_pct": 39.17963107942768,
+          "sector_relative_strength60_pct": 39.17963107942768,
+          "atr_pct": 4.923748268207359,
+          "log_turnover": 6.066435291415907
+        },
+        "signals": [
+          "20-session resistance breakout",
+          "Strong close near candle high",
+          "Above-average volume",
+          "Outperforming NIFTY 60D",
+          "Outperforming None 60D"
+        ],
+        "status": "QUEUED_NEXT_SESSION"
+      }
+    ],
+    "closed_trades": [],
+    "rejected_entries": [],
+    "equity_history": [
+      {
+        "date": "2026-11-17",
+        "equity": 100000.0,
+        "cash": 100000.0,
+        "open_positions": 0
+      }
+    ]
   }
 }
