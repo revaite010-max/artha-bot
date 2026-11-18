@@ -1,7 +1,7 @@
 {
   "version": "18.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-17T17:04:50.022317",
+  "last_updated": "2026-11-18T08:57:28.802716",
   "total_picks": 52,
   "total_wins": 0,
   "total_losses": 0,
@@ -1193,7 +1193,6 @@
     "DPEL.NS",
     "DPSCLTD.NS",
     "DPWIRES.NS",
-    "DRAGARWQ.NS",
     "DRCSYSTEMS.NS",
     "DREAMFOLKS.NS",
     "DREDGECORP.NS",
@@ -1256,7 +1255,6 @@
     "ELIN.NS",
     "ELITECON.NS",
     "ELLEN.NS",
-    "ELPROINTL.NS",
     "EMAMILTD.NS",
     "EMAMIPAP.NS",
     "EMAMIREAL.NS",
@@ -1825,6 +1823,7 @@
     "JKIPL.NS",
     "JKLAKSHMI.NS",
     "JKPAPER.NS",
+    "JKSHAH.NS",
     "JKTYRE.NS",
     "JLHL.NS",
     "JMA.NS",
@@ -3634,11 +3633,11 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-17T17:02:24.651887",
+  "nse_universe_updated_at": "2026-11-18T08:55:18.144619",
   "nse_source_counts": {
-    "mainboard": 2633,
+    "mainboard": 2632,
     "sme": 583,
-    "unique_total": 3216,
+    "unique_total": 3215,
     "source": "NSE official equity masters"
   },
   "expired_signals": [
@@ -3909,27 +3908,26 @@
   },
   "ai_training_summary": {
     "status": "INSUFFICIENT_CLASS_BALANCE",
-    "samples": 499,
+    "samples": 518,
     "validation_auc": null,
-    "validation_samples": 95,
-    "fit_samples": 499,
-    "raw_samples": 499,
-    "purged_training_dates": 12,
+    "validation_samples": 114,
+    "fit_samples": 518,
+    "raw_samples": 518,
+    "purged_training_dates": 11,
     "training_samples": 0
   },
   "paper_account": {
     "starting_cash": 100000.0,
-    "cash": 100000.0,
-    "positions": {},
-    "pending_entries": [
-      {
+    "cash": 58064.16,
+    "positions": {
+      "DAMCAPITAL": {
         "ticker": "DAMCAPITAL",
         "signal_date": "2026-11-17",
         "reference_close": 148.6,
         "entry_trigger": null,
         "stop": 145.5,
-        "target1": 153.25,
-        "target2": 156.35,
+        "target1": 154.75,
+        "target2": 158.45,
         "rr1": 1.5000000000000047,
         "rr2": 2.5000000000000044,
         "strategy": "PRICE_ACTION",
@@ -3954,16 +3952,26 @@
           "Strong close near candle high",
           "Above-average volume"
         ],
-        "status": "QUEUED_NEXT_SESSION"
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 149.1991,
+        "entry_date": "2026-11-18",
+        "shares": 135,
+        "remaining_shares": 135,
+        "initial_risk_amount": 499.3721623992897,
+        "realized_pnl": -20.141872162399288,
+        "bars_held": 1,
+        "target1_hit": false,
+        "last_price": 149.4499969482422,
+        "last_processed_date": "2026-11-18"
       },
-      {
+      "BANKINDIA": {
         "ticker": "BANKINDIA",
         "signal_date": "2026-11-17",
         "reference_close": 159.28,
         "entry_trigger": null,
         "stop": 155.18,
-        "target1": 165.43,
-        "target2": 169.53,
+        "target1": 163.88,
+        "target2": 167.35,
         "rr1": 1.5000000000000036,
         "rr2": 2.5000000000000036,
         "strategy": "PRICE_ACTION",
@@ -3989,16 +3997,65 @@
           "Outperforming NIFTY 60D",
           "Outperforming None 60D"
         ],
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 158.6585,
+        "entry_date": "2026-11-18",
+        "shares": 143,
+        "remaining_shares": 143,
+        "initial_risk_amount": 497.4254999999955,
+        "realized_pnl": -22.688165499999997,
+        "bars_held": 1,
+        "target1_hit": false,
+        "last_price": 158.11000061035156,
+        "last_processed_date": "2026-11-18"
+      }
+    },
+    "pending_entries": [
+      {
+        "ticker": "AJAXENGG",
+        "signal_date": "2026-11-18",
+        "reference_close": 629.2,
+        "entry_trigger": null,
+        "stop": 597.05,
+        "target1": 677.42,
+        "target2": 709.57,
+        "rr1": 1.4998444790046588,
+        "rr2": 2.4998444790046586,
+        "strategy": "PRICE_ACTION",
+        "rule_score": 97,
+        "ai_score": null,
+        "ai_features": {
+          "rsi14": 77.77777278757704,
+          "volume_ratio": 7.950438938124683,
+          "close_location": 0.9076305220883534,
+          "resistance_distance_pct": 7.785869328827633,
+          "ema50_distance_pct": 10.782420112745704,
+          "ema200_distance_pct": 10.763961648845012,
+          "momentum20_pct": 11.580064721724504,
+          "relative_strength60_pct": 6.860483396126016,
+          "sector_relative_strength60_pct": 6.860483396126016,
+          "atr_pct": 3.193397311046938,
+          "log_turnover": 3.762255115388143
+        },
+        "signals": [
+          "20-session resistance breakout",
+          "Strong close near candle high",
+          "Above-average volume",
+          "Outperforming NIFTY 60D",
+          "Outperforming None 60D"
+        ],
         "status": "QUEUED_NEXT_SESSION"
-      },
+      }
+    ],
+    "closed_trades": [
       {
         "ticker": "HINDOILEXP",
         "signal_date": "2026-11-17",
         "reference_close": 222.29,
         "entry_trigger": null,
-        "stop": 212.87,
-        "target1": 236.42,
-        "target2": 245.84,
+        "stop": 219.219,
+        "target1": 228.74,
+        "target2": 235.09,
         "rr1": 1.5000000000000016,
         "rr2": 2.5000000000000044,
         "strategy": "PRICE_ACTION",
@@ -4024,10 +4081,24 @@
           "Outperforming NIFTY 60D",
           "Outperforming None 60D"
         ],
-        "status": "QUEUED_NEXT_SESSION"
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 219.219,
+        "entry_date": "2026-11-18",
+        "shares": 78,
+        "remaining_shares": 0,
+        "initial_risk_amount": 495.22199999999697,
+        "realized_pnl": 937.0282673700009,
+        "bars_held": 1,
+        "target1_hit": true,
+        "last_price": 224.0800018310547,
+        "last_processed_date": "2026-11-18",
+        "last_exit_price": 234.85491,
+        "outcome": "TARGET2",
+        "exit_date": "2026-11-18",
+        "net_pnl": 937.03,
+        "r_multiple": 1.892
       }
     ],
-    "closed_trades": [],
     "rejected_entries": [],
     "equity_history": [
       {
@@ -4035,6 +4106,12 @@
         "equity": 100000.0,
         "cash": 100000.0,
         "open_positions": 0
+      },
+      {
+        "date": "2026-11-18",
+        "equity": 100849.64,
+        "cash": 58064.16,
+        "open_positions": 2
       }
     ]
   }
