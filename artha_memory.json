@@ -1,7 +1,7 @@
 {
   "version": "18.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-18T08:57:28.802716",
+  "last_updated": "2026-11-19T09:14:00.862773",
   "total_picks": 52,
   "total_wins": 0,
   "total_losses": 0,
@@ -911,6 +911,7 @@
     "BPLPHARMA.NS",
     "BRACEPORT.NS",
     "BRAHMINFRA.NS",
+    "BRAHMVIRAT.NS",
     "BRANDMAN.NS",
     "BRIGADE.NS",
     "BRIGHOTEL.NS",
@@ -3502,7 +3503,6 @@
     "VIPCLOTHNG.NS",
     "VIPIND.NS",
     "VIPULLTD.NS",
-    "VIRAT.NS",
     "VIRINCHI.NS",
     "VIRTUALG.NS",
     "VISACHROME.NS",
@@ -3633,7 +3633,7 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-18T08:55:18.144619",
+  "nse_universe_updated_at": "2026-11-19T09:12:07.415061",
   "nse_source_counts": {
     "mainboard": 2632,
     "sme": 583,
@@ -3908,62 +3908,18 @@
   },
   "ai_training_summary": {
     "status": "INSUFFICIENT_CLASS_BALANCE",
-    "samples": 518,
+    "samples": 469,
     "validation_auc": null,
-    "validation_samples": 114,
-    "fit_samples": 518,
-    "raw_samples": 518,
-    "purged_training_dates": 11,
+    "validation_samples": 83,
+    "fit_samples": 469,
+    "raw_samples": 469,
+    "purged_training_dates": 12,
     "training_samples": 0
   },
   "paper_account": {
     "starting_cash": 100000.0,
-    "cash": 58064.16,
+    "cash": 64621.34,
     "positions": {
-      "DAMCAPITAL": {
-        "ticker": "DAMCAPITAL",
-        "signal_date": "2026-11-17",
-        "reference_close": 148.6,
-        "entry_trigger": null,
-        "stop": 145.5,
-        "target1": 154.75,
-        "target2": 158.45,
-        "rr1": 1.5000000000000047,
-        "rr2": 2.5000000000000044,
-        "strategy": "PRICE_ACTION",
-        "rule_score": 100.0,
-        "ai_score": null,
-        "ai_features": {
-          "rsi14": 66.85515038764217,
-          "volume_ratio": 2.163015119842927,
-          "close_location": 0.8667361299394062,
-          "resistance_distance_pct": 0.5412740427871654,
-          "ema50_distance_pct": 4.794831061013549,
-          "ema200_distance_pct": -6.124705125706664,
-          "momentum20_pct": 2.6739518346024393,
-          "relative_strength60_pct": -2.155356714039658,
-          "sector_relative_strength60_pct": -2.155356714039658,
-          "atr_pct": 4.418860490343704,
-          "log_turnover": 3.961784739628613
-        },
-        "signals": [
-          "20-session resistance breakout",
-          "Bullish engulfing candle",
-          "Strong close near candle high",
-          "Above-average volume"
-        ],
-        "status": "QUEUED_NEXT_SESSION",
-        "entry_price": 149.1991,
-        "entry_date": "2026-11-18",
-        "shares": 135,
-        "remaining_shares": 135,
-        "initial_risk_amount": 499.3721623992897,
-        "realized_pnl": -20.141872162399288,
-        "bars_held": 1,
-        "target1_hit": false,
-        "last_price": 149.4499969482422,
-        "last_processed_date": "2026-11-18"
-      },
       "BANKINDIA": {
         "ticker": "BANKINDIA",
         "signal_date": "2026-11-17",
@@ -4004,21 +3960,19 @@
         "remaining_shares": 143,
         "initial_risk_amount": 497.4254999999955,
         "realized_pnl": -22.688165499999997,
-        "bars_held": 1,
+        "bars_held": 2,
         "target1_hit": false,
-        "last_price": 158.11000061035156,
-        "last_processed_date": "2026-11-18"
-      }
-    },
-    "pending_entries": [
-      {
+        "last_price": 161.60000610351562,
+        "last_processed_date": "2026-11-19"
+      },
+      "AJAXENGG": {
         "ticker": "AJAXENGG",
         "signal_date": "2026-11-18",
         "reference_close": 629.2,
         "entry_trigger": null,
         "stop": 597.05,
-        "target1": 677.42,
-        "target2": 709.57,
+        "target1": 655.97,
+        "target2": 679.54,
         "rr1": 1.4998444790046588,
         "rr2": 2.4998444790046586,
         "strategy": "PRICE_ACTION",
@@ -4039,6 +3993,54 @@
         },
         "signals": [
           "20-session resistance breakout",
+          "Strong close near candle high",
+          "Above-average volume",
+          "Outperforming NIFTY 60D",
+          "Outperforming None 60D"
+        ],
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 620.62,
+        "entry_date": "2026-11-19",
+        "shares": 21,
+        "remaining_shares": 21,
+        "initial_risk_amount": 494.96999999999866,
+        "realized_pnl": -13.033019999999997,
+        "bars_held": 1,
+        "target1_hit": false,
+        "last_price": 624.5499877929688,
+        "last_processed_date": "2026-11-19"
+      }
+    },
+    "pending_entries": [
+      {
+        "ticker": "ARIS",
+        "signal_date": "2026-11-19",
+        "reference_close": 156.9,
+        "entry_trigger": null,
+        "stop": 152.2,
+        "target1": 163.95,
+        "target2": 168.65,
+        "rr1": 1.499999999999991,
+        "rr2": 2.499999999999991,
+        "strategy": "PRICE_ACTION",
+        "rule_score": 107.0,
+        "ai_score": null,
+        "ai_features": {
+          "rsi14": 65.05364129327137,
+          "volume_ratio": 1.8246108415257927,
+          "close_location": 0.918457697880624,
+          "resistance_distance_pct": 1.3565832062835348,
+          "ema50_distance_pct": 11.534501898865223,
+          "ema200_distance_pct": 18.71606299991406,
+          "momentum20_pct": 17.810483950429436,
+          "relative_strength60_pct": 4.408241991755314,
+          "sector_relative_strength60_pct": 4.408241991755314,
+          "atr_pct": 4.7327665356834645,
+          "log_turnover": 5.62672080385716
+        },
+        "signals": [
+          "20-session resistance breakout",
+          "Bullish engulfing candle",
           "Strong close near candle high",
           "Above-average volume",
           "Outperforming NIFTY 60D",
@@ -4097,6 +4099,55 @@
         "exit_date": "2026-11-18",
         "net_pnl": 937.03,
         "r_multiple": 1.892
+      },
+      {
+        "ticker": "DAMCAPITAL",
+        "signal_date": "2026-11-17",
+        "reference_close": 148.6,
+        "entry_trigger": null,
+        "stop": 145.5,
+        "target1": 154.75,
+        "target2": 158.45,
+        "rr1": 1.5000000000000047,
+        "rr2": 2.5000000000000044,
+        "strategy": "PRICE_ACTION",
+        "rule_score": 100.0,
+        "ai_score": null,
+        "ai_features": {
+          "rsi14": 66.85515038764217,
+          "volume_ratio": 2.163015119842927,
+          "close_location": 0.8667361299394062,
+          "resistance_distance_pct": 0.5412740427871654,
+          "ema50_distance_pct": 4.794831061013549,
+          "ema200_distance_pct": -6.124705125706664,
+          "momentum20_pct": 2.6739518346024393,
+          "relative_strength60_pct": -2.155356714039658,
+          "sector_relative_strength60_pct": -2.155356714039658,
+          "atr_pct": 4.418860490343704,
+          "log_turnover": 3.961784739628613
+        },
+        "signals": [
+          "20-session resistance breakout",
+          "Bullish engulfing candle",
+          "Strong close near candle high",
+          "Above-average volume"
+        ],
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 149.1991,
+        "entry_date": "2026-11-18",
+        "shares": 135,
+        "remaining_shares": 0,
+        "initial_risk_amount": 499.3721623992897,
+        "realized_pnl": -558.7857296623973,
+        "bars_held": 2,
+        "target1_hit": false,
+        "last_price": 145.82000732421875,
+        "last_processed_date": "2026-11-19",
+        "last_exit_price": 145.3545,
+        "outcome": "STOP",
+        "exit_date": "2026-11-19",
+        "net_pnl": -558.79,
+        "r_multiple": -1.119
       }
     ],
     "rejected_entries": [],
@@ -4111,6 +4162,12 @@
         "date": "2026-11-18",
         "equity": 100849.64,
         "cash": 58064.16,
+        "open_positions": 2
+      },
+      {
+        "date": "2026-11-19",
+        "equity": 100845.69,
+        "cash": 64621.34,
         "open_positions": 2
       }
     ]
