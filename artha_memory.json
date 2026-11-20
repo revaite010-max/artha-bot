@@ -1,7 +1,7 @@
 {
   "version": "18.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-19T09:14:00.862773",
+  "last_updated": "2026-11-20T08:58:07.227329",
   "total_picks": 52,
   "total_wins": 0,
   "total_losses": 0,
@@ -1031,7 +1031,6 @@
     "COMFINTE.NS",
     "COMMITTED.NS",
     "COMPEAU.NS",
-    "COMPINFO.NS",
     "COMPUSOFT.NS",
     "COMSYN.NS",
     "CONCOR.NS",
@@ -2992,7 +2991,7 @@
     "SHRJAGP.NS",
     "SHUBHLAXMI.NS",
     "SHUBHSHREE.NS",
-    "SHUKRAPHAR.NS",
+    "SHUKRAMED.NS",
     "SHYAMCENT.NS",
     "SHYAMDHANI.NS",
     "SHYAMMETL.NS",
@@ -3633,11 +3632,11 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-19T09:12:07.415061",
+  "nse_universe_updated_at": "2026-11-20T08:55:20.518661",
   "nse_source_counts": {
-    "mainboard": 2632,
+    "mainboard": 2631,
     "sme": 583,
-    "unique_total": 3215,
+    "unique_total": 3214,
     "source": "NSE official equity masters"
   },
   "expired_signals": [
@@ -3908,24 +3907,24 @@
   },
   "ai_training_summary": {
     "status": "INSUFFICIENT_CLASS_BALANCE",
-    "samples": 469,
+    "samples": 446,
     "validation_auc": null,
-    "validation_samples": 83,
-    "fit_samples": 469,
-    "raw_samples": 469,
-    "purged_training_dates": 12,
+    "validation_samples": 92,
+    "fit_samples": 446,
+    "raw_samples": 446,
+    "purged_training_dates": 11,
     "training_samples": 0
   },
   "paper_account": {
     "starting_cash": 100000.0,
-    "cash": 64621.34,
+    "cash": 64762.65,
     "positions": {
       "BANKINDIA": {
         "ticker": "BANKINDIA",
         "signal_date": "2026-11-17",
         "reference_close": 159.28,
         "entry_trigger": null,
-        "stop": 155.18,
+        "stop": 158.6585,
         "target1": 163.88,
         "target2": 167.35,
         "rr1": 1.5000000000000036,
@@ -3957,13 +3956,14 @@
         "entry_price": 158.6585,
         "entry_date": "2026-11-18",
         "shares": 143,
-        "remaining_shares": 143,
+        "remaining_shares": 72,
         "initial_risk_amount": 497.4254999999955,
-        "realized_pnl": -22.688165499999997,
-        "bars_held": 2,
-        "target1_hit": false,
-        "last_price": 161.60000610351562,
-        "last_processed_date": "2026-11-19"
+        "realized_pnl": 324.77900997999905,
+        "bars_held": 3,
+        "target1_hit": true,
+        "last_price": 163.97999572753906,
+        "last_processed_date": "2026-11-20",
+        "last_exit_price": 163.71612
       },
       "AJAXENGG": {
         "ticker": "AJAXENGG",
@@ -4005,21 +4005,19 @@
         "remaining_shares": 21,
         "initial_risk_amount": 494.96999999999866,
         "realized_pnl": -13.033019999999997,
-        "bars_held": 1,
+        "bars_held": 2,
         "target1_hit": false,
-        "last_price": 624.5499877929688,
-        "last_processed_date": "2026-11-19"
-      }
-    },
-    "pending_entries": [
-      {
+        "last_price": 609.7000122070312,
+        "last_processed_date": "2026-11-20"
+      },
+      "ARIS": {
         "ticker": "ARIS",
         "signal_date": "2026-11-19",
         "reference_close": 156.9,
         "entry_trigger": null,
         "stop": 152.2,
-        "target1": 163.95,
-        "target2": 168.65,
+        "target1": 169.6,
+        "target2": 176.56,
         "rr1": 1.499999999999991,
         "rr2": 2.499999999999991,
         "strategy": "PRICE_ACTION",
@@ -4046,9 +4044,20 @@
           "Outperforming NIFTY 60D",
           "Outperforming None 60D"
         ],
-        "status": "QUEUED_NEXT_SESSION"
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 159.159,
+        "entry_date": "2026-11-20",
+        "shares": 72,
+        "remaining_shares": 72,
+        "initial_risk_amount": 501.04800000000023,
+        "realized_pnl": -11.459448000000002,
+        "bars_held": 1,
+        "target1_hit": false,
+        "last_price": 163.6999969482422,
+        "last_processed_date": "2026-11-20"
       }
-    ],
+    },
+    "pending_entries": [],
     "closed_trades": [
       {
         "ticker": "HINDOILEXP",
@@ -4169,6 +4178,12 @@
         "equity": 100845.69,
         "cash": 64621.34,
         "open_positions": 2
+      },
+      {
+        "date": "2026-11-20",
+        "equity": 101159.31,
+        "cash": 64762.65,
+        "open_positions": 3
       }
     ]
   }
