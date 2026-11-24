@@ -1,7 +1,7 @@
 {
   "version": "18.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-23T09:35:07.002247",
+  "last_updated": "2026-11-24T11:29:58.014183",
   "total_picks": 52,
   "total_wins": 0,
   "total_losses": 0,
@@ -3645,7 +3645,7 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-23T09:32:22.206277",
+  "nse_universe_updated_at": "2026-11-24T11:26:52.241326",
   "nse_source_counts": {
     "mainboard": 2643,
     "sme": 584,
@@ -3920,12 +3920,12 @@
   },
   "ai_training_summary": {
     "status": "INSUFFICIENT_CLASS_BALANCE",
-    "samples": 401,
+    "samples": 409,
     "validation_auc": null,
-    "validation_samples": 46,
-    "fit_samples": 401,
-    "raw_samples": 401,
-    "purged_training_dates": 11,
+    "validation_samples": 49,
+    "fit_samples": 409,
+    "raw_samples": 409,
+    "purged_training_dates": 12,
     "training_samples": 0
   },
   "paper_account": {
@@ -3974,7 +3974,7 @@
         "realized_pnl": -13.033019999999997,
         "bars_held": 3,
         "target1_hit": false,
-        "last_price": 615.3499755859375,
+        "last_price": 622.25,
         "last_processed_date": "2026-11-23"
       },
       "ARIS": {
@@ -4020,7 +4020,7 @@
         "realized_pnl": 352.21145759999996,
         "bars_held": 2,
         "target1_hit": true,
-        "last_price": 167.02000427246094,
+        "last_price": 166.8000030517578,
         "last_processed_date": "2026-11-23",
         "last_exit_price": 169.4304
       }
@@ -4241,6 +4241,12 @@
       {
         "date": "2026-11-23",
         "equity": 101191.69,
+        "cash": 82256.62,
+        "open_positions": 2
+      },
+      {
+        "date": "2026-11-24",
+        "equity": 101328.67,
         "cash": 82256.62,
         "open_positions": 2
       }
