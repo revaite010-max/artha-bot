@@ -1,7 +1,7 @@
 {
   "version": "18.0",
   "created": "2026-08-08T17:11:37.419971",
-  "last_updated": "2026-11-25T10:15:14.869925",
+  "last_updated": "2026-11-26T09:56:00.936834",
   "total_picks": 52,
   "total_wins": 0,
   "total_losses": 0,
@@ -1068,6 +1068,7 @@
     "CROMPTON.NS",
     "CROWN.NS",
     "CRSL.NS",
+    "CRYSTALCP.NS",
     "CSBBANK.NS",
     "CSLFINANCE.NS",
     "CSM.NS",
@@ -2260,6 +2261,7 @@
     "MPTODAY.NS",
     "MRF.NS",
     "MRIL.NS",
+    "MROTEK.NS",
     "MRPL.NS",
     "MSL.NS",
     "MSPL.NS",
@@ -2587,6 +2589,7 @@
     "PRASOLCHEM.NS",
     "PRATHAM.NS",
     "PRAVEG.NS",
+    "PRAXIS-RE3.NS",
     "PRAXIS.NS",
     "PRECAM.NS",
     "PRECISION.NS",
@@ -3390,7 +3393,6 @@
     "UMA.NS",
     "UMAEXPORTS.NS",
     "UMESLTD.NS",
-    "UMIYA-MRO.NS",
     "UNICHEMLAB.NS",
     "UNIDT.NS",
     "UNIECOM.NS",
@@ -3632,11 +3634,11 @@
     "ZYDUSLIFE.NS",
     "ZYDUSWELL.NS"
   ],
-  "nse_universe_updated_at": "2026-11-25T10:12:32.943366",
+  "nse_universe_updated_at": "2026-11-26T09:53:46.851364",
   "nse_source_counts": {
-    "mainboard": 2632,
-    "sme": 583,
-    "unique_total": 3214,
+    "mainboard": 2634,
+    "sme": 582,
+    "unique_total": 3216,
     "source": "NSE official equity masters"
   },
   "expired_signals": [
@@ -3907,73 +3909,26 @@
   },
   "ai_training_summary": {
     "status": "INSUFFICIENT_CLASS_BALANCE",
-    "samples": 404,
+    "samples": 604,
     "validation_auc": null,
-    "validation_samples": 52,
-    "fit_samples": 404,
-    "raw_samples": 404,
+    "validation_samples": 57,
+    "fit_samples": 604,
+    "raw_samples": 604,
     "purged_training_dates": 11,
     "training_samples": 0
   },
   "paper_account": {
     "starting_cash": 100000.0,
-    "cash": 89316.5,
+    "cash": 74169.55,
     "positions": {
-      "AJAXENGG": {
-        "ticker": "AJAXENGG",
-        "signal_date": "2026-11-18",
-        "reference_close": 629.2,
-        "entry_trigger": null,
-        "stop": 597.05,
-        "target1": 655.97,
-        "target2": 679.54,
-        "rr1": 1.4998444790046588,
-        "rr2": 2.4998444790046586,
-        "strategy": "PRICE_ACTION",
-        "rule_score": 97,
-        "ai_score": null,
-        "ai_features": {
-          "rsi14": 77.77777278757704,
-          "volume_ratio": 7.950438938124683,
-          "close_location": 0.9076305220883534,
-          "resistance_distance_pct": 7.785869328827633,
-          "ema50_distance_pct": 10.782420112745704,
-          "ema200_distance_pct": 10.763961648845012,
-          "momentum20_pct": 11.580064721724504,
-          "relative_strength60_pct": 6.860483396126016,
-          "sector_relative_strength60_pct": 6.860483396126016,
-          "atr_pct": 3.193397311046938,
-          "log_turnover": 3.762255115388143
-        },
-        "signals": [
-          "20-session resistance breakout",
-          "Strong close near candle high",
-          "Above-average volume",
-          "Outperforming NIFTY 60D",
-          "Outperforming None 60D"
-        ],
-        "status": "QUEUED_NEXT_SESSION",
-        "entry_price": 620.62,
-        "entry_date": "2026-11-19",
-        "shares": 21,
-        "remaining_shares": 21,
-        "initial_risk_amount": 494.96999999999866,
-        "realized_pnl": -13.033019999999997,
-        "bars_held": 4,
-        "target1_hit": false,
-        "last_price": 608.7000122070312,
-        "last_processed_date": "2026-11-25"
-      }
-    },
-    "pending_entries": [
-      {
+      "GODREJCP": {
         "ticker": "GODREJCP",
         "signal_date": "2026-11-25",
         "reference_close": 963.0,
         "entry_trigger": null,
         "stop": 925.21,
-        "target1": 1019.69,
-        "target2": 1057.48,
+        "target1": 1005.58,
+        "target2": 1037.73,
         "rr1": 1.5001323101349593,
         "rr2": 2.5001323101349593,
         "strategy": "PRICE_ACTION",
@@ -3998,16 +3953,26 @@
           "Strong close near candle high",
           "Above-average volume"
         ],
-        "status": "QUEUED_NEXT_SESSION"
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 957.3564,
+        "entry_date": "2026-11-26",
+        "shares": 15,
+        "remaining_shares": 15,
+        "initial_risk_amount": 482.196366577146,
+        "realized_pnl": -14.360346366577147,
+        "bars_held": 1,
+        "target1_hit": false,
+        "last_price": 940.0,
+        "last_processed_date": "2026-11-26"
       },
-      {
+      "DABUR": {
         "ticker": "DABUR",
         "signal_date": "2026-11-25",
         "reference_close": 430.0,
         "entry_trigger": null,
         "stop": 412.16,
-        "target1": 456.76,
-        "target2": 474.6,
+        "target1": 452.08,
+        "target2": 468.05,
         "rr1": 1.5000000000000016,
         "rr2": 2.500000000000005,
         "strategy": "PRICE_ACTION",
@@ -4032,6 +3997,53 @@
           "Above-average volume",
           "Outperforming NIFTY 60D",
           "Outperforming FMCG 60D"
+        ],
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 428.1277,
+        "entry_date": "2026-11-26",
+        "shares": 31,
+        "remaining_shares": 31,
+        "initial_risk_amount": 494.999078796384,
+        "realized_pnl": -13.271959078796385,
+        "bars_held": 1,
+        "target1_hit": false,
+        "last_price": 417.5,
+        "last_processed_date": "2026-11-26"
+      }
+    },
+    "pending_entries": [
+      {
+        "ticker": "TFCILTD",
+        "signal_date": "2026-11-26",
+        "reference_close": 174.91,
+        "entry_trigger": null,
+        "stop": 172.52,
+        "target1": 178.49,
+        "target2": 180.87,
+        "rr1": 1.4979079497908088,
+        "rr2": 2.4937238493724023,
+        "strategy": "PRICE_ACTION",
+        "rule_score": 104,
+        "ai_score": null,
+        "ai_features": {
+          "rsi14": 78.1752269344394,
+          "volume_ratio": 0.8169407593343346,
+          "close_location": 0.9685877258855673,
+          "resistance_distance_pct": 0.5287649519509108,
+          "ema50_distance_pct": 13.522341178624252,
+          "ema200_distance_pct": 52.51222999646474,
+          "momentum20_pct": 12.816054719059245,
+          "relative_strength60_pct": 15.8161000352399,
+          "sector_relative_strength60_pct": 15.8161000352399,
+          "atr_pct": 2.394292101100203,
+          "log_turnover": 7.456282314316405
+        },
+        "signals": [
+          "20-session resistance breakout",
+          "Bullish engulfing candle",
+          "Strong close near candle high",
+          "Outperforming NIFTY 60D",
+          "Outperforming None 60D"
         ],
         "status": "QUEUED_NEXT_SESSION"
       }
@@ -4285,6 +4297,56 @@
         "exit_date": "2026-11-25",
         "net_pnl": 965.94,
         "r_multiple": 1.928
+      },
+      {
+        "ticker": "AJAXENGG",
+        "signal_date": "2026-11-18",
+        "reference_close": 629.2,
+        "entry_trigger": null,
+        "stop": 597.05,
+        "target1": 655.97,
+        "target2": 679.54,
+        "rr1": 1.4998444790046588,
+        "rr2": 2.4998444790046586,
+        "strategy": "PRICE_ACTION",
+        "rule_score": 97,
+        "ai_score": null,
+        "ai_features": {
+          "rsi14": 77.77777278757704,
+          "volume_ratio": 7.950438938124683,
+          "close_location": 0.9076305220883534,
+          "resistance_distance_pct": 7.785869328827633,
+          "ema50_distance_pct": 10.782420112745704,
+          "ema200_distance_pct": 10.763961648845012,
+          "momentum20_pct": 11.580064721724504,
+          "relative_strength60_pct": 6.860483396126016,
+          "sector_relative_strength60_pct": 6.860483396126016,
+          "atr_pct": 3.193397311046938,
+          "log_turnover": 3.762255115388143
+        },
+        "signals": [
+          "20-session resistance breakout",
+          "Strong close near candle high",
+          "Above-average volume",
+          "Outperforming NIFTY 60D",
+          "Outperforming None 60D"
+        ],
+        "status": "QUEUED_NEXT_SESSION",
+        "entry_price": 620.62,
+        "entry_date": "2026-11-19",
+        "shares": 21,
+        "remaining_shares": 0,
+        "initial_risk_amount": 494.96999999999866,
+        "realized_pnl": -533.0665819500003,
+        "bars_held": 5,
+        "target1_hit": false,
+        "last_price": 597.0999755859375,
+        "last_processed_date": "2026-11-26",
+        "last_exit_price": 596.45295,
+        "outcome": "STOP",
+        "exit_date": "2026-11-26",
+        "net_pnl": -533.07,
+        "r_multiple": -1.077
       }
     ],
     "rejected_entries": [],
@@ -4330,6 +4392,12 @@
         "equity": 102099.2,
         "cash": 89316.5,
         "open_positions": 1
+      },
+      {
+        "date": "2026-11-26",
+        "equity": 101212.05,
+        "cash": 74169.55,
+        "open_positions": 2
       }
     ]
   }
